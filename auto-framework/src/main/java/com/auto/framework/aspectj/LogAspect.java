@@ -103,10 +103,6 @@ public class LogAspect
             {
                 operLog.setOperName(loginUser.getUsername());
                 SysUser currentUser = loginUser.getUser();
-                if (StringUtils.isNotNull(currentUser) && StringUtils.isNotNull(currentUser.getDept()))
-                {
-                    operLog.setDeptName(currentUser.getDept().getDeptName());
-                }
             }
 
             if (e != null)

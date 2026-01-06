@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.auto.common.annotation.Log;
 import com.auto.common.core.controller.BaseController;
 import com.auto.common.core.domain.AjaxResult;
-import com.auto.common.core.domain.entity.SysDept;
 import com.auto.common.core.domain.entity.SysRole;
 import com.auto.common.core.domain.entity.SysUser;
 import com.auto.common.core.domain.model.LoginUser;
@@ -27,7 +26,6 @@ import com.auto.common.utils.poi.ExcelUtil;
 import com.auto.framework.web.service.SysPermissionService;
 import com.auto.framework.web.service.TokenService;
 import com.auto.system.domain.SysUserRole;
-import com.auto.system.service.ISysDeptService;
 import com.auto.system.service.ISysRoleService;
 import com.auto.system.service.ISysUserService;
 
@@ -51,9 +49,6 @@ public class SysRoleController extends BaseController
 
     @Autowired
     private ISysUserService userService;
-
-    @Autowired
-    private ISysDeptService deptService;
 
     @PreAuthorize("@ss.hasPermi('system:role:list')")
     @GetMapping("/list")
@@ -139,19 +134,6 @@ public class SysRoleController extends BaseController
             return success();
         }
         return error("修改角色'" + role.getRoleName() + "'失败，请联系管理员");
-    }
-
-    /**
-     * 修改保存数据权限
-     */
-    @PreAuthorize("@ss.hasPermi('system:role:edit')")
-    @Log(title = "角色管理", businessType = BusinessType.UPDATE)
-    @PutMapping("/dataScope")
-    public AjaxResult dataScope(@RequestBody SysRole role)
-    {
-        roleService.checkRoleAllowed(role);
-        roleService.checkRoleDataScope(role.getRoleId());
-        return toAjax(roleService.authDataScope(role));
     }
 
     /**
@@ -245,18 +227,5 @@ public class SysRoleController extends BaseController
     {
         roleService.checkRoleDataScope(roleId);
         return toAjax(roleService.insertAuthUsers(roleId, userIds));
-    }
-
-    /**
-     * 获取对应角色部门树列表
-     */
-    @PreAuthorize("@ss.hasPermi('system:role:query')")
-    @GetMapping(value = "/deptTree/{roleId}")
-    public AjaxResult deptTree(@PathVariable("roleId") Long roleId)
-    {
-        AjaxResult ajax = AjaxResult.success();
-        ajax.put("checkedKeys", deptService.selectDeptListByRoleId(roleId));
-        ajax.put("depts", deptService.selectDeptTreeList(new SysDept()));
-        return ajax;
     }
 }
