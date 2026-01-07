@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.auto.mapper.UserAddressMapper">
-    
+
     <resultMap type="UserAddress" id="UserAddressResult">
         <result property="id"    column="id"    />
         <result property="userId"    column="user_id"    />
@@ -24,10 +24,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectUserAddressList" parameterType="UserAddress" resultMap="UserAddressResult">
         <include refid="selectUserAddressVo"/>
-        <where>  
+        <where>
         </where>
     </select>
-    
+
     <select id="selectUserAddressById" parameterType="Long" resultMap="UserAddressResult">
         <include refid="selectUserAddressVo"/>
         where id = #{id}
@@ -46,7 +46,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isDefault != null">is_default,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
-         </trim>
+        </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="userId != null">#{userId},</if>
             <if test="consignee != null and consignee != ''">#{consignee},</if>
@@ -58,7 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isDefault != null">#{isDefault},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
-         </trim>
+        </trim>
     </insert>
 
     <update id="updateUserAddress" parameterType="UserAddress">
@@ -83,7 +83,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteUserAddressByIds" parameterType="String">
-        delete from user_address where id in 
+        delete from user_address where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
