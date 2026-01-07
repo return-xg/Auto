@@ -54,6 +54,8 @@ public class UserAddressServiceImpl implements IUserAddressService
     @Override
     public int insertUserAddress(UserAddress userAddress)
     {
+        // 校验手机号
+        validatePhone(userAddress.getPhone());
         userAddress.setCreateTime(DateUtils.getNowDate());
         userAddress.setUserId(SecurityUtils.getUserId());
         return userAddressMapper.insertUserAddress(userAddress);
@@ -68,6 +70,8 @@ public class UserAddressServiceImpl implements IUserAddressService
     @Override
     public int updateUserAddress(UserAddress userAddress)
     {
+        // 校验手机号
+        validatePhone(userAddress.getPhone());
         userAddress.setUpdateTime(DateUtils.getNowDate());
         return userAddressMapper.updateUserAddress(userAddress);
     }
@@ -94,5 +98,23 @@ public class UserAddressServiceImpl implements IUserAddressService
     public int deleteUserAddressById(Long id)
     {
         return userAddressMapper.deleteUserAddressById(id);
+    }
+
+    /**
+     * 校验手机号格式是否正确，不正确则抛出异常
+     *
+     * @param phone 手机号
+     * @throws IllegalArgumentException 当手机号格式不正确时抛出
+     */
+    private void validatePhone(String phone) {
+        if (phone == null || phone.trim().isEmpty()) {
+            throw new IllegalArgumentException("手机号格式不正确");
+        }
+
+        // 手机号正则表达式：1开头，第二位是3-9，总共11位数字
+        String regex = "^1[3-9]\\d{9}$";
+        if (!phone.matches(regex)) {
+            throw new IllegalArgumentException("手机号格式不正确");
+        }
     }
 }
