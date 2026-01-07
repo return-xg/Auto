@@ -83,6 +83,45 @@ public class Product extends BaseEntity
     @Excel(name = "状态", readConverterExp = "0=下架，1上架")
     private Integer status;
 
+    /** 排序字段（用于查询，不映射到数据库） */
+    private String orderBy;
+
+    /** 最低价格（用于查询，不映射到数据库） */
+    private BigDecimal priceMin;
+
+    /** 最高价格（用于查询，不映射到数据库） */
+    private BigDecimal priceMax;
+
+    public String getOrderBy()
+    {
+        return orderBy;
+    }
+
+    public void setOrderBy(String orderBy)
+    {
+        this.orderBy = orderBy;
+    }
+
+    public BigDecimal getPriceMin()
+    {
+        return priceMin;
+    }
+
+    public void setPriceMin(BigDecimal priceMin)
+    {
+        this.priceMin = priceMin;
+    }
+
+    public BigDecimal getPriceMax()
+    {
+        return priceMax;
+    }
+
+    public void setPriceMax(BigDecimal priceMax)
+    {
+        this.priceMax = priceMax;
+    }
+
     public void setId(Long id)
     {
         this.id = id;

@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.auto.mapper.ProductMapper">
+
+    <resultMap type="Product" id="ProductResult">
+        <result property="id"    column="id"    />
+        <result property="categoryId"    column="category_id"    />
+        <result property="brand"    column="brand"    />
+        <result property="name"    column="name"    />
+        <result property="subtitle"    column="subtitle"    />
+        <result property="mainImage"    column="main_image"    />
+        <result property="subImages"    column="sub_images"    />
+        <result property="detail"    column="detail"    />
+        <result property="spec"    column="spec"    />
+        <result property="fitCarModel"    column="fit_car_model"    />
+        <result property="price"    column="price"    />
+        <result property="stock"    column="stock"    />
+        <result property="warnStock"    column="warn_stock"    />
+        <result property="sales"    column="sales"    />
+        <result property="isHot"    column="is_hot"    />
+        <result property="isNew"    column="is_new"    />
+        <result property="status"    column="status"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectProductVo">
+        select id, category_id, brand, name, subtitle, main_image, sub_images, detail, spec, fit_car_model, 
+               price, stock, warn_stock, sales, is_hot, is_new, status, create_time, update_time 
+        from product
+    </sql>
+
+    <select id="selectProductList" parameterType="Product" resultMap="ProductResult">
+        <include refid="selectProductVo"/>
+        <where>
+            <if test="categoryId != null">
+                and category_id = #{categoryId}
+            </if>
+            <if test="brand != null and brand != ''">
+                and brand = #{brand}
+            </if>
+            <if test="name != null and name != ''">
+                and name like concat('%', #{name}, '%')
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <if test="isHot != null">
+                and is_hot = #{isHot}
+            </if>
+            <if test="isNew != null">
+                and is_new = #{isNew}
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectProductById" parameterType="Long" resultMap="ProductResult">
+        <include refid="selectProductVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="searchProductList" parameterType="Product" resultMap="ProductResult">
+        <include refid="selectProductVo"/>
+        <where>
+            and status = 1
+            <if test="name != null and name != ''">
+                and (name like concat('%', #{name}, '%') or subtitle like concat('%', #{name}, '%'))
+            </if>
+            <if test="brand != null and brand != ''">
+                and brand like concat('%', #{brand}, '%')
+            </if>
+            <if test="categoryId != null">
+                and category_id = #{categoryId}
+            </if>
+            <if test="fitCarModel != null and fitCarModel != ''">
+                and fit_car_model like concat('%', #{fitCarModel}, '%')
+            </if>
+            <if test="priceMin != null">
+                and price &gt;= #{priceMin}
+            </if>
+            <if test="priceMax != null">
+                and price &lt;= #{priceMax}
+            </if>
+        </where>
+        <choose>
+            <when test="orderBy != null and orderBy == 'price_asc'">
+                order by price asc
+            </when>
+            <when test="orderBy != null and orderBy == 'price_desc'">
+                order by price desc
+            </when>
+            <when test="orderBy != null and orderBy == 'sales'">
+                order by sales desc
+            </when>
+            <when test="orderBy != null and orderBy == 'create_time'">
+                order by create_time desc
+            </when>
+            <otherwise>
+                order by create_time desc
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectProductListByCategory" parameterType="Long" resultMap="ProductResult">
+        <include refid="selectProductVo"/>
+        where category_id = #{categoryId} and status = 1
+    </select>
+
+    <insert id="insertProduct" parameterType="Product" useGeneratedKeys="true" keyProperty="id">
+        insert into product
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="categoryId != null">category_id,</if>
+            <if test="brand != null and brand != ''">brand,</if>
+            <if test="name != null and name != ''">name,</if>
+            <if test="subtitle != null and subtitle != ''">subtitle,</if>
+            <if test="mainImage != null and mainImage != ''">main_image,</if>
+            <if test="subImages != null and subImages != ''">sub_images,</if>
+            <if test="detail != null and detail != ''">detail,</if>
+            <if test="spec != null and spec != ''">spec,</if>
+            <if test="fitCarModel != null and fitCarModel != ''">fit_car_model,</if>
+            <if test="price != null">price,</if>
+            <if test="stock != null">stock,</if>
+            <if test="warnStock != null">warn_stock,</if>
+            <if test="sales != null">sales,</if>
+            <if test="isHot != null">is_hot,</if>
+            <if test="isNew != null">is_new,</if>
+            <if test="status != null">status,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="categoryId != null">#{categoryId},</if>
+            <if test="brand != null and brand != ''">#{brand},</if>
+            <if test="name != null and name != ''">#{name},</if>
+            <if test="subtitle != null and subtitle != ''">#{subtitle},</if>
+            <if test="mainImage != null and mainImage != ''">#{mainImage},</if>
+            <if test="subImages != null and subImages != ''">#{subImages},</if>
+            <if test="detail != null and detail != ''">#{detail},</if>
+            <if test="spec != null and spec != ''">#{spec},</if>
+            <if test="fitCarModel != null and fitCarModel != ''">#{fitCarModel},</if>
+            <if test="price != null">#{price},</if>
+            <if test="stock != null">#{stock},</if>
+            <if test="warnStock != null">#{warnStock},</if>
+            <if test="sales != null">#{sales},</if>
+            <if test="isHot != null">#{isHot},</if>
+            <if test="isNew != null">#{isNew},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateProduct" parameterType="Product">
+        update product
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="brand != null and brand != ''">brand = #{brand},</if>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="subtitle != null and subtitle != ''">subtitle = #{subtitle},</if>
+            <if test="mainImage != null and mainImage != ''">main_image = #{mainImage},</if>
+            <if test="subImages != null and subImages != ''">sub_images = #{subImages},</if>
+            <if test="detail != null and detail != ''">detail = #{detail},</if>
+            <if test="spec != null and spec != ''">spec = #{spec},</if>
+            <if test="fitCarModel != null and fitCarModel != ''">fit_car_model = #{fitCarModel},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="stock != null">stock = #{stock},</if>
+            <if test="warnStock != null">warn_stock = #{warnStock},</if>
+            <if test="sales != null">sales = #{sales},</if>
+            <if test="isHot != null">is_hot = #{isHot},</if>
+            <if test="isNew != null">is_new = #{isNew},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteProductById" parameterType="Long">
+        delete from product where id = #{id}
+    </delete>
+
+    <delete id="deleteProductByIds" parameterType="String">
+        delete from product where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

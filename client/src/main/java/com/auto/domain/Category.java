@@ -18,21 +18,9 @@ public class Category extends BaseEntity
     /** 主键ID */
     private Long id;
 
-    /** 父分类ID */
-    @Excel(name = "父分类ID")
-    private Long parentId;
-
     /** 分类名称 */
     @Excel(name = "分类名称")
     private String name;
-
-    /** 分类层级（1一级，2二级…） */
-    @Excel(name = "分类层级", readConverterExp = "1=一级，2二级…")
-    private Long level;
-
-    /** 排序值 */
-    @Excel(name = "排序值")
-    private Long sort;
 
     /** 是否显示（0否，1是） */
     @Excel(name = "是否显示", readConverterExp = "0=否，1是")
@@ -48,16 +36,6 @@ public class Category extends BaseEntity
         return id;
     }
 
-    public void setParentId(Long parentId)
-    {
-        this.parentId = parentId;
-    }
-
-    public Long getParentId()
-    {
-        return parentId;
-    }
-
     public void setName(String name)
     {
         this.name = name;
@@ -66,26 +44,6 @@ public class Category extends BaseEntity
     public String getName()
     {
         return name;
-    }
-
-    public void setLevel(Long level)
-    {
-        this.level = level;
-    }
-
-    public Long getLevel()
-    {
-        return level;
-    }
-
-    public void setSort(Long sort)
-    {
-        this.sort = sort;
-    }
-
-    public Long getSort()
-    {
-        return sort;
     }
 
     public void setIsShow(Integer isShow)
@@ -100,12 +58,9 @@ public class Category extends BaseEntity
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
+        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
                 .append("id", getId())
-                .append("parentId", getParentId())
                 .append("name", getName())
-                .append("level", getLevel())
-                .append("sort", getSort())
                 .append("isShow", getIsShow())
                 .append("createTime", getCreateTime())
                 .append("updateTime", getUpdateTime())
