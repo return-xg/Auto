@@ -234,6 +234,7 @@
         <module>auto-quartz</module>
         <module>auto-generator</module>
         <module>auto-common</module>
+        <module>client</module>
     </modules>
     <packaging>pom</packaging>
 
