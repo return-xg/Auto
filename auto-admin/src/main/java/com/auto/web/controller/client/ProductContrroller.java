@@ -67,7 +67,7 @@ public class ProductContrroller extends BaseController
             }
             product.setFitCarModel(fitCarModel);
         }
-        List<Product> list = productService.searchProductList(product);
+        List<Product> list = productService.selectProductList(product);
         return getDataTable(list);
     }
 

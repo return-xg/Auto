@@ -60,4 +60,9 @@ public interface CategoryMapper
      * @return 结果
      */
     public int deleteCategoryByIds(Long[] ids);
+
+    /**
+     * 根据分类名称查询分类信息
+     */
+    Category selectCategoryByName(String categoryName);
 }

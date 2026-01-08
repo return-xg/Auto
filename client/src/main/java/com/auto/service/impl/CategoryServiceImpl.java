@@ -47,6 +47,12 @@ public class CategoryServiceImpl implements ICategoryService
     @Override
     public int insertCategory(Category category)
     {
+        // 检查分类名称是否已存在
+        Category existCategory = categoryMapper.selectCategoryByName(category.getName());
+        if (existCategory != null) {
+            throw new RuntimeException("分类名称已存在：" + category.getName());
+        }
+
         category.setCreateTime(DateUtils.getNowDate());
         return categoryMapper.insertCategory(category);
     }
@@ -57,6 +63,12 @@ public class CategoryServiceImpl implements ICategoryService
     @Override
     public int updateCategory(Category category)
     {
+        // 检查新名称是否与其它分类重名
+        Category existCategory = categoryMapper.selectCategoryByName(category.getName());
+        if (existCategory != null && !existCategory.getId().equals(category.getId())) {
+            throw new RuntimeException("分类名称已存在：" + category.getName());
+        }
+
         category.setUpdateTime(DateUtils.getNowDate());
         return categoryMapper.updateCategory(category);
     }

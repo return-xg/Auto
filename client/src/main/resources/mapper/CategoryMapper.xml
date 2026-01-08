@@ -34,6 +34,10 @@
         where id = #{id}
     </select>
 
+    <select id="selectCategoryByName" parameterType="String" resultType="com.auto.domain.Category">
+        SELECT * FROM category WHERE name = #{categoryName}
+    </select>
+
     <insert id="insertCategory" parameterType="Category" useGeneratedKeys="true" keyProperty="id">
         insert into category
         <trim prefix="(" suffix=")" suffixOverrides=",">
