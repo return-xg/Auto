@@ -144,6 +144,14 @@ public class ProductServiceImpl implements IProductService
         {
             product.setIsNew(0); // 默认非新品
         }
+        if (product.getStock() == null)
+        {
+            product.setStock(0L); // 默认库存为0
+        }
+        if (product.getWarnStock() == null)
+        {
+            product.setWarnStock(10L); // 默认库存预警值为10
+        }
         product.setCreateTime(DateUtils.getNowDate());
         return productMapper.insertProduct(product);
     }
@@ -183,5 +191,37 @@ public class ProductServiceImpl implements IProductService
     public int deleteProductById(Long id)
     {
         return productMapper.deleteProductById(id);
+    }
+    
+    @Override
+    public int putOnSale(Long id)
+    {
+        Product product = new Product();
+        product.setId(id);
+        product.setStatus(1); // 1表示上架
+        product.setUpdateTime(DateUtils.getNowDate());
+        return productMapper.updateProduct(product);
+    }
+    
+    @Override
+    public int putOffSale(Long id)
+    {
+        Product product = new Product();
+        product.setId(id);
+        product.setStatus(0); // 0表示下架
+        product.setUpdateTime(DateUtils.getNowDate());
+        return productMapper.updateProduct(product);
+    }
+    
+    @Override
+    public int batchPutOnSale(Long[] ids)
+    {
+        return productMapper.batchPutOnSale(ids);
+    }
+    
+    @Override
+    public int batchPutOffSale(Long[] ids)
+    {
+        return productMapper.batchPutOffSale(ids);
     }
 }

@@ -154,4 +154,72 @@ public class ProductContrroller extends BaseController
     {
         return toAjax(productService.deleteProductByIds(ids));
     }
+    
+    /**
+     * 商品上架
+     */
+    @PutMapping("/{id}/putOnSale")
+    public AjaxResult putOnSale(@PathVariable Long id)
+    {
+        return toAjax(productService.putOnSale(id));
+    }
+    
+    /**
+     * 商品下架
+     */
+    @PutMapping("/{id}/putOffSale")
+    public AjaxResult putOffSale(@PathVariable Long id)
+    {
+        return toAjax(productService.putOffSale(id));
+    }
+    
+    /**
+     * 商品批量上架
+     */
+    @PutMapping("/batchPutOnSale")
+    public AjaxResult batchPutOnSale(@RequestBody Long[] ids)
+    {
+        return toAjax(productService.batchPutOnSale(ids));
+    }
+    
+    /**
+     * 商品批量下架
+     */
+    @PutMapping("/batchPutOffSale")
+    public AjaxResult batchPutOffSale(@RequestBody Long[] ids)
+    {
+        return toAjax(productService.batchPutOffSale(ids));
+    }
+    
+    /**
+     * 修改商品库存
+     */
+    @PutMapping("/{id}/updateStock")
+    public AjaxResult updateStock(@PathVariable Long id, @RequestParam Long stock)
+    {
+        if (stock < 0)
+        {
+            return error("库存不能为负数");
+        }
+        Product product = new Product();
+        product.setId(id);
+        product.setStock(stock);
+        return toAjax(productService.updateProduct(product));
+    }
+    
+    /**
+     * 设置库存预警值
+     */
+    @PutMapping("/{id}/updateWarnStock")
+    public AjaxResult updateWarnStock(@PathVariable Long id, @RequestParam Long warnStock)
+    {
+        if (warnStock < 0)
+        {
+            return error("库存预警值不能为负数");
+        }
+        Product product = new Product();
+        product.setId(id);
+        product.setWarnStock(warnStock);
+        return toAjax(productService.updateProduct(product));
+    }
 }

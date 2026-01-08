@@ -74,4 +74,36 @@ public interface IProductService
      * @return 结果
      */
     public int deleteProductById(Long id);
+    
+    /**
+     * 商品上架
+     *
+     * @param id 商品主键
+     * @return 结果
+     */
+    public int putOnSale(Long id);
+    
+    /**
+     * 商品下架
+     *
+     * @param id 商品主键
+     * @return 结果
+     */
+    public int putOffSale(Long id);
+    
+    /**
+     * 商品批量上架
+     *
+     * @param ids 商品主键集合
+     * @return 结果
+     */
+    public int batchPutOnSale(Long[] ids);
+    
+    /**
+     * 商品批量下架
+     *
+     * @param ids 商品主键集合
+     * @return 结果
+     */
+    public int batchPutOffSale(Long[] ids);
 }

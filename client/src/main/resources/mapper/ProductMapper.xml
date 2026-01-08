@@ -187,5 +187,21 @@
             #{id}
         </foreach>
     </delete>
+    
+    <update id="batchPutOnSale" parameterType="String">
+        update product set status = 1, update_time = now()
+        where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+    
+    <update id="batchPutOffSale" parameterType="String">
+        update product set status = 0, update_time = now()
+        where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
 
 </mapper>

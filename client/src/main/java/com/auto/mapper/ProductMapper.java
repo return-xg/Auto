@@ -74,4 +74,20 @@ public interface ProductMapper
      * @return 结果
      */
     public int deleteProductByIds(Long[] ids);
+    
+    /**
+     * 批量上架商品
+     *
+     * @param ids 商品主键集合
+     * @return 结果
+     */
+    public int batchPutOnSale(Long[] ids);
+    
+    /**
+     * 批量下架商品
+     *
+     * @param ids 商品主键集合
+     * @return 结果
+     */
+    public int batchPutOffSale(Long[] ids);
 }
