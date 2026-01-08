@@ -254,10 +254,29 @@ export default {
     // 查询
     handleQuery() {
       this.pagination.current = 1
+      // 确保查询时不会意外打开弹窗
+      if (this.stockFormVisible) {
+        this.stockFormVisible = false
+        this.currentProduct = {}
+      }
+      if (this.productFormVisible) {
+        this.productFormVisible = false
+        this.currentProduct = {}
+      }
       this.loadProductList()
     },
+    
     // 重置查询
     resetQuery() {
+      // 确保重置查询时不会意外打开弹窗
+      if (this.stockFormVisible) {
+        this.stockFormVisible = false
+        this.currentProduct = {}
+      }
+      if (this.productFormVisible) {
+        this.productFormVisible = false
+        this.currentProduct = {}
+      }
       this.queryForm = {
         name: '',
         brand: '',
@@ -302,6 +321,7 @@ export default {
     // 关闭表单
     handleFormClose() {
       this.productFormVisible = false
+      this.currentProduct = {}
     },
     // 表单提交成功
     handleFormSuccess() {
@@ -315,6 +335,7 @@ export default {
     // 关闭库存表单
     handleStockFormClose() {
       this.stockFormVisible = false
+      this.currentProduct = {}
     },
     // 库存表单提交成功
     handleStockFormSuccess() {

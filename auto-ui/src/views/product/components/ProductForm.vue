@@ -5,6 +5,7 @@
     width="800px"
     append-to-body
     :close-on-click-modal="false"
+    @close="handleClose"
   >
     <el-form ref="form" :model="form" :rules="rules" label-width="100px">
       <el-row :gutter="20">
@@ -161,10 +162,13 @@ export default {
         this.initForm()
       }
     },
-    product(newVal) {
-      if (this.visible) {
-        this.initForm()
-      }
+    product: {
+      handler(newVal) {
+        if (this.visible && newVal && Object.keys(newVal).length > 0) {
+          this.initForm()
+        }
+      },
+      deep: true
     }
   },
   methods: {

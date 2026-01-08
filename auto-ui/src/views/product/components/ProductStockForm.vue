@@ -4,6 +4,7 @@
     :visible.sync="visible"
     width="400px"
     append-to-body
+    @close="handleClose"
   >
     <el-form ref="form" :model="form" :rules="rules" label-width="100px">
       <el-form-item label="商品名称" prop="name">
@@ -58,10 +59,13 @@ export default {
         this.initForm()
       }
     },
-    product(newVal) {
-      if (this.visible) {
-        this.initForm()
-      }
+    product: {
+      handler(newVal) {
+        if (this.visible && newVal && Object.keys(newVal).length > 0) {
+          this.initForm()
+        }
+      },
+      deep: true
     }
   },
   methods: {
