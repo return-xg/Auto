@@ -9,7 +9,6 @@
         <result property="categoryId"    column="category_id"    />
         <result property="brand"    column="brand"    />
         <result property="name"    column="name"    />
-        <result property="subtitle"    column="subtitle"    />
         <result property="mainImage"    column="main_image"    />
         <result property="subImages"    column="sub_images"    />
         <result property="detail"    column="detail"    />
@@ -27,7 +26,7 @@
     </resultMap>
 
     <sql id="selectProductVo">
-        select id, category_id, brand, name, subtitle, main_image, sub_images, detail, spec, fit_car_model, 
+        select id, category_id, brand, name, main_image, sub_images, detail, spec, fit_car_model,
                price, stock, warn_stock, sales, is_hot, is_new, status, create_time, update_time 
         from product
     </sql>
@@ -67,7 +66,7 @@
         <where>
             and status = 1
             <if test="name != null and name != ''">
-                and (name like concat('%', #{name}, '%') or subtitle like concat('%', #{name}, '%'))
+                and name like concat('%', #{name}, '%')
             </if>
             <if test="brand != null and brand != ''">
                 and brand like concat('%', #{brand}, '%')
@@ -115,7 +114,6 @@
             <if test="categoryId != null">category_id,</if>
             <if test="brand != null and brand != ''">brand,</if>
             <if test="name != null and name != ''">name,</if>
-            <if test="subtitle != null and subtitle != ''">subtitle,</if>
             <if test="mainImage != null and mainImage != ''">main_image,</if>
             <if test="subImages != null and subImages != ''">sub_images,</if>
             <if test="detail != null and detail != ''">detail,</if>
@@ -135,7 +133,6 @@
             <if test="categoryId != null">#{categoryId},</if>
             <if test="brand != null and brand != ''">#{brand},</if>
             <if test="name != null and name != ''">#{name},</if>
-            <if test="subtitle != null and subtitle != ''">#{subtitle},</if>
             <if test="mainImage != null and mainImage != ''">#{mainImage},</if>
             <if test="subImages != null and subImages != ''">#{subImages},</if>
             <if test="detail != null and detail != ''">#{detail},</if>
@@ -159,7 +156,6 @@
             <if test="categoryId != null">category_id = #{categoryId},</if>
             <if test="brand != null and brand != ''">brand = #{brand},</if>
             <if test="name != null and name != ''">name = #{name},</if>
-            <if test="subtitle != null and subtitle != ''">subtitle = #{subtitle},</if>
             <if test="mainImage != null and mainImage != ''">main_image = #{mainImage},</if>
             <if test="subImages != null and subImages != ''">sub_images = #{subImages},</if>
             <if test="detail != null and detail != ''">detail = #{detail},</if>

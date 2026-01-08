@@ -31,10 +31,6 @@ public class Product extends BaseEntity
     @Excel(name = "商品名称")
     private String name;
 
-    /** 副标题 */
-    @Excel(name = "副标题")
-    private String subtitle;
-
     /** 主图 */
     @Excel(name = "主图")
     private String mainImage;
@@ -160,16 +156,6 @@ public class Product extends BaseEntity
     public String getName()
     {
         return name;
-    }
-
-    public void setSubtitle(String subtitle)
-    {
-        this.subtitle = subtitle;
-    }
-
-    public String getSubtitle()
-    {
-        return subtitle;
     }
 
     public void setMainImage(String mainImage)
@@ -299,7 +285,6 @@ public class Product extends BaseEntity
                 .append("categoryId", getCategoryId())
                 .append("brand", getBrand())
                 .append("name", getName())
-                .append("subtitle", getSubtitle())
                 .append("mainImage", getMainImage())
                 .append("subImages", getSubImages())
                 .append("detail", getDetail())

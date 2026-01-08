@@ -78,6 +78,40 @@
         <el-table-column prop="stock" label="库存" width="100" />
         <el-table-column prop="warnStock" label="预警值" width="100" />
         <el-table-column prop="sales" label="销量" width="100" />
+        <el-table-column prop="mainImage" label="主图" width="120">
+          <template slot-scope="scope">
+            <el-image
+              v-if="scope.row.mainImage"
+              :src="scope.row.mainImage"
+              :preview-src-list="[scope.row.mainImage]"
+              fit="cover"
+              style="width: 80px; height: 80px;"
+              :preview-title="scope.row.name"
+              preview-teleported>
+            </el-image>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="spec" label="规格参数" show-overflow-tooltip width="150" />
+        <el-table-column prop="fitCarModel" label="适配车型" show-overflow-tooltip width="150" />
+        <el-table-column prop="subImages" label="附图" width="150">
+          <template slot-scope="scope">
+            <div v-if="getSubImages(scope.row.subImages).length > 0" class="image-preview">
+              <el-image
+                v-for="(image, index) in getSubImages(scope.row.subImages)"
+                :key="index"
+                :src="image"
+                :preview-src-list="getSubImages(scope.row.subImages)"
+                fit="cover"
+                style="width: 40px; height: 40px; margin-right: 5px;"
+                :preview-title="scope.row.name + ' - 附图'"
+                preview-teleported
+                :initial-index="index">
+              </el-image>
+            </div>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="isHot" label="热销" width="80">
           <template slot-scope="scope">
             <el-tag :type="scope.row.isHot === 1 ? 'danger' : 'info'">
@@ -90,6 +124,11 @@
             <el-tag :type="scope.row.isNew === 1 ? 'success' : 'info'">
               {{ scope.row.isNew === 1 ? '是' : '否' }}
             </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="商品详情" width="120">
+          <template slot-scope="scope">
+            <el-button type="text" size="small" @click="showDetail(scope.row)">查看详情</el-button>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
@@ -151,6 +190,19 @@
       @close="handleStockFormClose"
       @success="handleStockFormSuccess"
     />
+    
+    <!-- 商品详情弹窗 -->
+    <el-dialog
+      title="商品详情"
+      :visible.sync="detailDialogVisible"
+      width="60%"
+      append-to-body
+    >
+      <div v-html="currentDetail"></div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="detailDialogVisible = false">关闭</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -200,7 +252,10 @@ export default {
       editMode: false,
       currentProduct: {},
       // 库存表单
-      stockFormVisible: false
+      stockFormVisible: false,
+      // 商品详情弹窗
+      detailDialogVisible: false,
+      currentDetail: ''
     }
   },
   mounted() {
@@ -478,6 +533,22 @@ export default {
       if (!row[column.property]) return ''
       const date = new Date(row[column.property])
       return date.toLocaleString('zh-CN')
+    },
+    // 显示商品详情
+    showDetail(product) {
+      this.currentDetail = product.detail || '暂无商品详情'
+      this.detailDialogVisible = true
+    },
+    // 安全解析subImages JSON
+    getSubImages(subImagesStr) {
+      try {
+        if (!subImagesStr) return []
+        const parsed = JSON.parse(subImagesStr)
+        return Array.isArray(parsed) ? parsed : []
+      } catch (error) {
+        console.error('解析附图数据失败:', error)
+        return []
+      }
     }
   }
 }
@@ -488,6 +559,10 @@ export default {
   padding: 20px;
 }
 
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -496,9 +571,61 @@ export default {
 
 .table-actions {
   display: flex;
+  gap: 10px;
   align-items: center;
+  margin-bottom: 20px;
 }
 
+.image-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+/* 商品详情对话框样式 */
+.detail-dialog >>> .el-dialog__body {
+  padding: 20px;
+}
+
+/* 表格操作按钮样式 */
+.el-table .el-button {
+  margin-right: 5px;
+  margin-bottom: 5px;
+}
+
+/* 查询表单样式 */
+.el-form--inline .el-form-item {
+  margin-right: 20px;
+}
+
+/* 表格斑马纹样式 */
+.el-table--striped .el-table__body tr.el-table__row--striped td {
+  background-color: #fafafa;
+}
+
+/* 表格悬停样式 */
+.el-table tbody tr:hover > td {
+  background-color: #f5f7fa;
+}
+
+/* 卡片样式 */
+.el-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* 表格样式 */
+.el-table {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* 按钮组样式 */
+.el-button-group {
+  display: flex;
+}
+
+/* 分页样式 */
 .pagination-container {
   display: flex;
   justify-content: flex-end;
