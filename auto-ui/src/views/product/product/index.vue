@@ -73,7 +73,6 @@
             {{ getCategoryName(scope.row.categoryId) }}
           </template>
         </el-table-column>
-        <el-table-column prop="subtitle" label="副标题" show-overflow-tooltip width="150" />
         <el-table-column prop="price" label="价格" width="100" :formatter="formatPrice" />
         <el-table-column prop="stock" label="库存" width="100" />
         <el-table-column prop="warnStock" label="预警值" width="100" />
@@ -190,7 +189,7 @@
       @close="handleStockFormClose"
       @success="handleStockFormSuccess"
     />
-    
+
     <!-- 商品详情弹窗 -->
     <el-dialog
       title="商品详情"
@@ -320,7 +319,7 @@ export default {
       }
       this.loadProductList()
     },
-    
+
     // 重置查询
     resetQuery() {
       // 确保重置查询时不会意外打开弹窗
