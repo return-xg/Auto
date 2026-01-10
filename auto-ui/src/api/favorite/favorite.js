@@ -8,17 +8,17 @@ export function listFavorite(query) {
   })
 }
 
-export function addFavorite(data) {
+export function addFavorite(productId) {
   return request({
-    url: '/favorite',
+    url: '/favorite/add',
     method: 'post',
-    data: data
+    params: { productId }
   })
 }
 
-export function delFavorite(id) {
+export function delFavorite(productId) {
   return request({
-    url: '/favorite/' + id,
+    url: '/favorite/remove/' + productId,
     method: 'delete'
   })
 }

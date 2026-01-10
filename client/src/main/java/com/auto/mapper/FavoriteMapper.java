@@ -1,6 +1,7 @@
 package com.auto.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.auto.domain.Favorite;
 
 /**
@@ -26,7 +27,7 @@ public interface FavoriteMapper
      * @param productId 商品ID
      * @return 收藏
      */
-    public Favorite selectFavoriteByUserAndProduct(Long userId, Long productId);
+    public Favorite selectFavoriteByUserAndProduct(@Param("userId") Long userId, @Param("productId") Long productId);
 
     /**
      * 新增收藏
@@ -51,5 +52,5 @@ public interface FavoriteMapper
      * @param productId 商品ID
      * @return 结果
      */
-    public int deleteFavoriteByUserAndProduct(Long userId, Long productId);
+    public int deleteFavoriteByUserAndProduct(@Param("userId") Long userId, @Param("productId") Long productId);
 }

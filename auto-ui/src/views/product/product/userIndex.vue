@@ -184,7 +184,7 @@
 import { listProduct, searchProduct, getFilterOptions } from '@/api/product/product'
 import { listCategory } from '@/api/category/category'
 import { addToCart } from '@/api/cart/cart'
-import { addFavorite, delFavorite, checkFavorite } from '@/api/favorite/favorite'
+import { addFavorite, delFavorite, checkFavorite, listFavorite } from '@/api/favorite/favorite'
 import ProductDetailDialog from './ProductDetailDialog.vue'
 
 export default {
@@ -222,6 +222,7 @@ export default {
   },
   mounted() {
     this.loadCategories()
+    this.loadFavorites()
     this.loadProductList()
     this.loadFilterOptions()
   },
@@ -233,6 +234,16 @@ export default {
         }
       }).catch(error => {
         console.error('获取分类列表失败:', error)
+      })
+    },
+    loadFavorites() {
+      listFavorite().then(response => {
+        if (response.code === 200) {
+          const favorites = response.rows || []
+          this.favoriteProducts = new Set(favorites.map(f => f.productId))
+        }
+      }).catch(error => {
+        console.error('获取收藏列表失败:', error)
       })
     },
     loadProductList() {
@@ -351,7 +362,6 @@ export default {
       this.detailDialogVisible = true
     },
     toggleFavorite(product) {
-      const userId = this.$store.getters.id
       if (product.isFavorite) {
         delFavorite(product.id).then(response => {
           if (response.code === 200) {
@@ -363,7 +373,7 @@ export default {
           this.$message.error('操作失败')
         })
       } else {
-        addFavorite({ userId, productId: product.id }).then(response => {
+        addFavorite(product.id).then(response => {
           if (response.code === 200) {
             product.isFavorite = true
             this.favoriteProducts.add(product.id)
