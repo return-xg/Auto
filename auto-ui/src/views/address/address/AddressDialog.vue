@@ -13,7 +13,7 @@
       <el-form-item label="手机号" prop="phone">
         <el-input v-model="form.phone" placeholder="请输入手机号" maxlength="11" />
       </el-form-item>
-      <el-form-item label="所在地区" prop="region">
+      <el-form-item label="所在地区" prop="region" required>
         <el-cascader
           v-model="form.region"
           :options="regionData"
@@ -47,7 +47,7 @@
 
 <script>
 import { addAddress, updateAddress } from '@/api/address/address'
-import regionData from '@/utils/regionData'
+import { regionData, CodeToText } from 'element-china-area-data'
 
 export default {
   name: 'AddressDialog',
@@ -87,7 +87,19 @@ export default {
           { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
         ],
         region: [
-          { required: true, message: '请选择所在地区', trigger: 'change' }
+          { 
+            required: true, 
+            message: '请选择所在地区', 
+            trigger: 'change', 
+            type: 'array',
+            validator: (rule, value, callback) => {
+              if (!value || value.length === 0) {
+                callback(new Error('请选择所在地区'))
+              } else {
+                callback()
+              }
+            }
+          }
         ],
         detail: [
           { required: true, message: '请输入详细地址', trigger: 'blur' },
@@ -131,7 +143,7 @@ export default {
       this.form = {
         name: this.address.name || this.address.consignee,
         phone: this.address.phone,
-        region: [this.address.province, this.address.city, this.address.district],
+        region: this.findRegionCodes(this.address.province, this.address.city, this.address.district),
         province: this.address.province,
         city: this.address.city,
         district: this.address.district,
@@ -141,16 +153,47 @@ export default {
     },
     handleRegionChange(value) {
       if (value && value.length === 3) {
-        this.form.province = value[0]
-        this.form.city = value[1]
-        this.form.district = value[2]
+        this.form.province = CodeToText[value[0]]
+        this.form.city = CodeToText[value[1]]
+        this.form.district = CodeToText[value[2]]
       }
+    },
+    findRegionCodes(province, city, district) {
+      let provinceCode = null
+      let cityCode = null
+      let districtCode = null
+
+      for (const p of regionData) {
+        if (p.label === province) {
+          provinceCode = p.value
+          if (p.children && p.children.length > 0) {
+            for (const c of p.children) {
+              if (c.label === city) {
+                cityCode = c.value
+                if (c.children && c.children.length > 0) {
+                  for (const d of c.children) {
+                    if (d.label === district) {
+                      districtCode = d.value
+                      break
+                    }
+                  }
+                }
+                break
+              }
+            }
+          }
+          break
+        }
+      }
+
+      return [provinceCode, cityCode, districtCode]
     },
     handleSubmit() {
       this.$refs.addressForm.validate(valid => {
         if (valid) {
           this.submitting = true
           const data = {
+            userId: this.$store.getters.id,
             name: this.form.name,
             phone: this.form.phone,
             province: this.form.province,

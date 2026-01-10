@@ -388,11 +388,13 @@ export default {
     showAddAddressDialog() {
       this.addressDialogVisible = true
     },
-    handleAddressSuccess(newAddress) {
-      this.loadAddressList()
-      if (newAddress && newAddress.id) {
-        this.selectedAddressId = newAddress.id
-      }
+    handleAddressSuccess() {
+      this.loadAddressList().then(() => {
+        if (this.addressList.length > 0) {
+          const lastAddress = this.addressList[this.addressList.length - 1]
+          this.selectedAddressId = lastAddress.id
+        }
+      })
     }
   }
 }

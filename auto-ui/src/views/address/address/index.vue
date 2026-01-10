@@ -1,12 +1,5 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
-
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
@@ -94,26 +87,27 @@
     <!-- 添加或修改收货地址对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="收货人姓名" prop="consignee">
+        <el-form-item label="收货人" prop="consignee">
           <el-input v-model="form.consignee" placeholder="请输入收货人姓名" />
         </el-form-item>
         <el-form-item label="手机号" prop="phone">
           <el-input v-model="form.phone" placeholder="请输入手机号" />
         </el-form-item>
-        <el-form-item label="省" prop="province">
-          <el-input v-model="form.province" placeholder="请输入省" />
-        </el-form-item>
-        <el-form-item label="市" prop="city">
-          <el-input v-model="form.city" placeholder="请输入市" />
-        </el-form-item>
-        <el-form-item label="区/县" prop="district">
-          <el-input v-model="form.district" placeholder="请输入区/县" />
+        <el-form-item label="省市区" prop="region" required>
+          <el-cascader
+            v-model="form.region"
+            :options="regionData"
+            :props="{ expandTrigger: 'hover' }"
+            placeholder="请选择省/市/区"
+            style="width: 100%;"
+            @change="handleRegionChange"
+          />
         </el-form-item>
         <el-form-item label="详细地址" prop="detail">
           <el-input v-model="form.detail" placeholder="请输入详细地址" />
         </el-form-item>
         <el-form-item label="是否默认地址" prop="isDefault">
-          <el-input v-model="form.isDefault" placeholder="请输入是否默认地址" />
+          <el-switch v-model="form.isDefault" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -126,37 +120,27 @@
 
 <script>
 import { listAddress, getAddress, delAddress, addAddress, updateAddress } from "@/api/address/address"
+import { regionData, CodeToText } from "element-china-area-data"
 
 export default {
   name: "Address",
   data() {
     return {
-      // 遮罩层
+      regionData: regionData,
       loading: true,
-      // 选中数组
       ids: [],
-      // 非单个禁用
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      // 总条数
       total: 0,
-      // 收货地址表格数据
       addressList: [],
-      // 弹出层标题
       title: "",
-      // 是否显示弹出层
       open: false,
-      // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
       },
-      // 表单参数
       form: {},
-      // 表单校验
       rules: {
         consignee: [
           { required: true, message: "收货人姓名不能为空", trigger: "blur" }
@@ -164,14 +148,20 @@ export default {
         phone: [
           { required: true, message: "手机号不能为空", trigger: "blur" }
         ],
-        province: [
-          { required: true, message: "省不能为空", trigger: "blur" }
-        ],
-        city: [
-          { required: true, message: "市不能为空", trigger: "blur" }
-        ],
-        district: [
-          { required: true, message: "区/县不能为空", trigger: "blur" }
+        region: [
+          { 
+            required: true, 
+            message: "请选择省市区", 
+            trigger: "change", 
+            type: 'array',
+            validator: (rule, value, callback) => {
+              if (!value || value.length === 0) {
+                callback(new Error('请选择省市区'))
+              } else {
+                callback()
+              }
+            }
+          }
         ],
         detail: [
           { required: true, message: "详细地址不能为空", trigger: "blur" }
@@ -204,11 +194,12 @@ export default {
         userId: null,
         consignee: null,
         phone: null,
+        region: [],
         province: null,
         city: null,
         district: null,
         detail: null,
-        isDefault: null,
+        isDefault: false,
         createTime: null,
         updateTime: null
       }
@@ -242,6 +233,8 @@ export default {
       const id = row.id || this.ids
       getAddress(id).then(response => {
         this.form = response.data
+        this.form.region = this.findRegionCodes(response.data.province, response.data.city, response.data.district)
+        this.form.isDefault = response.data.isDefault === 1 || response.data.isDefault === true
         this.open = true
         this.title = "修改收货地址"
       })
@@ -250,14 +243,18 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          const submitData = {
+            ...this.form,
+            isDefault: this.form.isDefault ? 1 : 0
+          }
           if (this.form.id != null) {
-            updateAddress(this.form).then(response => {
+            updateAddress(submitData).then(response => {
               this.$modal.msgSuccess("修改成功")
               this.open = false
               this.getList()
             })
           } else {
-            addAddress(this.form).then(response => {
+            addAddress(submitData).then(response => {
               this.$modal.msgSuccess("新增成功")
               this.open = false
               this.getList()
@@ -265,6 +262,43 @@ export default {
           }
         }
       })
+    },
+    handleRegionChange(value) {
+      if (value && value.length === 3) {
+        this.form.province = CodeToText[value[0]]
+        this.form.city = CodeToText[value[1]]
+        this.form.district = CodeToText[value[2]]
+      }
+    },
+    findRegionCodes(province, city, district) {
+      let provinceCode = null
+      let cityCode = null
+      let districtCode = null
+
+      for (const p of regionData) {
+        if (p.label === province) {
+          provinceCode = p.value
+          if (p.children && p.children.length > 0) {
+            for (const c of p.children) {
+              if (c.label === city) {
+                cityCode = c.value
+                if (c.children && c.children.length > 0) {
+                  for (const d of c.children) {
+                    if (d.label === district) {
+                      districtCode = d.value
+                      break
+                    }
+                  }
+                }
+                break
+              }
+            }
+          }
+          break
+        }
+      }
+
+      return [provinceCode, cityCode, districtCode]
     },
     /** 删除按钮操作 */
     handleDelete(row) {
