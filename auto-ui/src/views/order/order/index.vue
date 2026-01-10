@@ -7,11 +7,11 @@
 
       <el-tabs v-model="activeTab" @tab-click="handleTabClick">
         <el-tab-pane label="全部订单" name="all"></el-tab-pane>
-        <el-tab-pane label="待支付" name="pending_payment"></el-tab-pane>
-        <el-tab-pane label="待发货" name="pending_shipment"></el-tab-pane>
-        <el-tab-pane label="已发货" name="shipped"></el-tab-pane>
-        <el-tab-pane label="已完成" name="completed"></el-tab-pane>
-        <el-tab-pane label="已取消" name="cancelled"></el-tab-pane>
+        <el-tab-pane label="待支付" name="0"></el-tab-pane>
+        <el-tab-pane label="待发货" name="1"></el-tab-pane>
+        <el-tab-pane label="已发货" name="2"></el-tab-pane>
+        <el-tab-pane label="已完成" name="3"></el-tab-pane>
+        <el-tab-pane label="已取消" name="4"></el-tab-pane>
       </el-tabs>
 
       <div v-loading="loading">
@@ -29,9 +29,9 @@
 
             <div class="order-content">
               <div class="product-list">
-                <div v-for="item in order.items" :key="item.id" class="product-item">
+                <div v-for="item in order.products" :key="item.id" class="product-item">
                   <el-image
-                    :src="item.mainImage || '/static/images/default-product.png'"
+                    :src="item.productImage || '/static/images/default-product.png'"
                     fit="cover"
                     style="width: 80px; height: 80px; border-radius: 4px;"
                   >
@@ -41,7 +41,7 @@
                   </el-image>
                   <div class="product-detail">
                     <div class="product-name">{{ item.productName }}</div>
-                    <div class="product-spec">{{ item.spec || '默认规格' }}</div>
+                    <div class="product-spec">{{ item.productSpec || '默认规格' }}</div>
                     <div class="product-price">
                       <span class="price">¥{{ Number(item.price).toFixed(2) }}</span>
                       <span class="quantity">x{{ item.quantity }}</span>
@@ -53,33 +53,33 @@
               <div class="order-summary">
                 <div class="summary-item">
                   <span class="label">商品总额：</span>
-                  <span class="value">¥{{ Number(order.totalAmount).toFixed(2) }}</span>
+                  <span class="value">¥{{ Number(order.totalPrice).toFixed(2) }}</span>
                 </div>
                 <div class="summary-item">
                   <span class="label">运费：</span>
-                  <span class="value">¥{{ Number(order.freight).toFixed(2) }}</span>
+                  <span class="value">¥{{ Number(order.freightPrice).toFixed(2) }}</span>
                 </div>
                 <div class="summary-item total">
                   <span class="label">订单总价：</span>
-                  <span class="value">¥{{ Number(order.totalAmount + order.freight).toFixed(2) }}</span>
+                  <span class="value">¥{{ Number(order.payPrice).toFixed(2) }}</span>
                 </div>
               </div>
             </div>
 
             <div class="order-footer">
               <div class="delivery-info">
-                <span v-if="order.deliveryType === 'home'">
-                  <i class="el-icon-truck"></i> 配送方式：送货上门
+                <span v-if="order.deliveryType === 1">
+                  <i class="el-icon-truck"></i> 配送方式：快递配送
                 </span>
                 <span v-else>
-                  <i class="el-icon-house"></i> 配送方式：门店安装
-                  <span v-if="order.storeName">（{{ order.storeName }}）</span>
+                  <i class="el-icon-house"></i> 配送方式：门店自提
+                  <span v-if="order.storeInfo">（{{ order.storeInfo }}）</span>
                 </span>
               </div>
               <div class="order-actions">
                 <el-button size="small" @click="viewOrderDetail(order)">查看详情</el-button>
                 <el-button
-                  v-if="order.status === 'pending_payment'"
+                  v-if="order.status === 0"
                   type="primary"
                   size="small"
                   @click="handlePay(order)"
@@ -87,7 +87,7 @@
                   立即支付
                 </el-button>
                 <el-button
-                  v-if="order.status === 'pending_payment'"
+                  v-if="order.status === 0"
                   type="danger"
                   size="small"
                   @click="handleCancel(order)"
@@ -95,7 +95,7 @@
                   取消订单
                 </el-button>
                 <el-button
-                  v-if="order.status === 'shipped'"
+                  v-if="order.status === 2"
                   type="success"
                   size="small"
                   @click="viewLogistics(order)"
@@ -103,7 +103,7 @@
                   查看物流
                 </el-button>
                 <el-button
-                  v-if="order.status === 'shipped'"
+                  v-if="order.status === 2"
                   type="warning"
                   size="small"
                   @click="handleConfirm(order)"
@@ -111,7 +111,7 @@
                   确认收货
                 </el-button>
                 <el-button
-                  v-if="order.status === 'completed'"
+                  v-if="order.status === 3"
                   type="info"
                   size="small"
                   @click="handleRefund(order)"
@@ -213,8 +213,6 @@ export default {
       this.loading = true
       const userId = this.$store.getters.id
       const queryParams = {
-        pageNum: this.pagination.current,
-        pageSize: this.pagination.size,
         userId
       }
       
@@ -225,8 +223,8 @@ export default {
       listOrder(queryParams).then(response => {
         this.loading = false
         if (response.code === 200) {
-          this.orderList = response.rows || []
-          this.pagination.total = response.total || 0
+          this.orderList = response.data || []
+          this.pagination.total = this.orderList.length
         }
       }).catch(error => {
         this.loading = false
@@ -247,21 +245,21 @@ export default {
     },
     getStatusType(status) {
       const typeMap = {
-        pending_payment: 'warning',
-        pending_shipment: 'info',
-        shipped: 'primary',
-        completed: 'success',
-        cancelled: 'danger'
+        0: 'warning',
+        1: 'info',
+        2: 'primary',
+        3: 'success',
+        4: 'danger'
       }
       return typeMap[status] || 'info'
     },
     getStatusText(status) {
       const textMap = {
-        pending_payment: '待支付',
-        pending_shipment: '待发货',
-        shipped: '已发货',
-        completed: '已完成',
-        cancelled: '已取消'
+        0: '待支付',
+        1: '待发货',
+        2: '已发货',
+        3: '已完成',
+        4: '已取消'
       }
       return textMap[status] || '未知'
     },
@@ -276,7 +274,7 @@ export default {
     handlePaySuccess() {
       this.payDialogVisible = false
       this.$message.success('支付成功')
-      this.loadOrderList()
+      this.$router.push('/product/userIndex')
     },
     handlePayFail() {
       this.payDialogVisible = false

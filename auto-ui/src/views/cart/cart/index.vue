@@ -84,7 +84,6 @@
         <div v-else class="empty-cart">
           <i class="el-icon-shopping-cart-2"></i>
           <p>购物车空空如也</p>
-          <el-button type="primary" @click="goToShop">去逛逛</el-button>
         </div>
       </div>
     </el-card>
@@ -126,6 +125,14 @@ export default {
           this.cartList = cartData.cartItems || []
           this.selectedItems = this.cartList.filter(item => item.selected === 1)
           this.selectAll = cartData.isAllSelected || false
+          this.$nextTick(() => {
+            this.$refs.table?.clearSelection()
+            this.cartList.forEach(row => {
+              if (row.selected === 1) {
+                this.$refs.table?.toggleRowSelection(row, true)
+              }
+            })
+          })
           this.saveCartToLocalStorage()
         }
       }).catch(error => {
@@ -144,6 +151,9 @@ export default {
         this.cartList.forEach(row => {
           this.$refs.table?.toggleRowSelection(row, true)
         })
+        this.selectedItems = [...this.cartList]
+      } else {
+        this.selectedItems = []
       }
       const userId = this.$store.getters.id
       updateAllSelected({ userId, selected: val ? 1 : 0 }).then(response => {
@@ -173,6 +183,10 @@ export default {
       updateQuantity({ userId, productId: row.productId, quantity: row.quantity }).then(response => {
         if (response.code === 200) {
           this.$message.success('数量已更新')
+          const selectedItem = this.selectedItems.find(item => item.cartId === row.cartId)
+          if (selectedItem) {
+            selectedItem.quantity = row.quantity
+          }
           this.saveCartToLocalStorage()
         } else {
           this.$message.error(response.msg || '更新失败')
@@ -234,11 +248,12 @@ export default {
         this.$message.warning('请选择要结算的商品')
         return
       }
-      localStorage.setItem('checkoutItems', JSON.stringify(this.selectedItems))
+      localStorage.setItem('checkoutItems', JSON.stringify({
+        selectedItems: this.selectedItems,
+        totalAmount: this.totalPrice,
+        selectedCount: this.selectedCount
+      }))
       this.$router.push('/order/checkout')
-    },
-    goToShop() {
-      this.$router.push('/product/userIndex')
     },
     formatPrice(row, column) {
       return '¥' + Number(row[column.property]).toFixed(2)

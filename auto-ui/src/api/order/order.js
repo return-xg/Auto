@@ -17,7 +17,7 @@ export function getOrder(id) {
 
 export function createOrder(data) {
   return request({
-    url: '/order',
+    url: '/order/create',
     method: 'post',
     data: data
   })
@@ -31,17 +31,24 @@ export function updateOrder(data) {
   })
 }
 
-export function cancelOrder(id) {
+export function cancelOrder(id, reason) {
   return request({
-    url: '/order/' + id + '/cancel',
-    method: 'put'
+    url: '/order/cancel',
+    method: 'post',
+    params: {
+      orderId: id,
+      reason: reason
+    }
   })
 }
 
 export function confirmOrder(id) {
   return request({
-    url: '/order/' + id + '/confirm',
-    method: 'put'
+    url: '/order/confirm',
+    method: 'post',
+    params: {
+      orderId: id
+    }
   })
 }
 
@@ -54,9 +61,13 @@ export function deleteOrder(id) {
 
 export function payOrder(id, data) {
   return request({
-    url: '/order/' + id + '/pay',
+    url: '/order/pay',
     method: 'post',
-    data: data
+    params: {
+      orderId: id,
+      payType: data.payType,
+      success: data.success
+    }
   })
 }
 

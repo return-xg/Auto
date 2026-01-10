@@ -81,7 +81,7 @@ public class OrderServiceImpl implements IOrderService {
             throw new IllegalArgumentException("用户ID不能为空");
         }
 
-        if (createOrderDTO.getCartItemIds() == null || createOrderDTO.getCartItemIds().isEmpty()) {
+        if (createOrderDTO.getProductIds() == null || createOrderDTO.getProductIds().isEmpty()) {
             throw new IllegalArgumentException("请选择要购买的商品");
         }
 
@@ -111,8 +111,8 @@ public class OrderServiceImpl implements IOrderService {
         }
 
         List<Cart> cartItems = new ArrayList<>();
-        for (Long cartItemId : createOrderDTO.getCartItemIds()) {
-            Cart cart = cartMapper.selectCartByUserIdAndProductId(createOrderDTO.getUserId(), cartItemId);
+        for (Long productId : createOrderDTO.getProductIds()) {
+            Cart cart = cartMapper.selectCartByUserIdAndProductId(createOrderDTO.getUserId(), productId);
             if (cart != null) {
                 cartItems.add(cart);
             }
@@ -195,7 +195,7 @@ public class OrderServiceImpl implements IOrderService {
             orderMapper.updateOrder(order);
         }
 
-        cartMapper.deleteCartBatch(createOrderDTO.getUserId(), createOrderDTO.getCartItemIds());
+        cartMapper.deleteCartBatch(createOrderDTO.getUserId(), createOrderDTO.getProductIds());
 
         return getOrderById(order.getId());
     }

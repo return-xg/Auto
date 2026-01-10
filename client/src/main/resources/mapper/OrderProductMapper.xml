@@ -14,13 +14,11 @@
         <result property="price"    column="price"    />
         <result property="quantity"    column="quantity"    />
         <result property="totalPrice"    column="total_price"    />
-        <result property="createTime"    column="create_time"    />
-        <result property="updateTime"    column="update_time"    />
     </resultMap>
 
     <sql id="selectOrderProductVo">
         select id, order_id, product_id, product_name, product_image, product_spec,
-               price, quantity, total_price, create_time, update_time
+               price, quantity, total_price
         from order_product
     </sql>
 
@@ -59,8 +57,6 @@
             <if test="price != null">price,</if>
             <if test="quantity != null">quantity,</if>
             <if test="totalPrice != null">total_price,</if>
-            <if test="createTime != null">create_time,</if>
-            <if test="updateTime != null">update_time,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="orderId != null">#{orderId},</if>
@@ -71,18 +67,16 @@
             <if test="price != null">#{price},</if>
             <if test="quantity != null">#{quantity},</if>
             <if test="totalPrice != null">#{totalPrice},</if>
-            <if test="createTime != null">#{createTime},</if>
-            <if test="updateTime != null">#{updateTime},</if>
         </trim>
     </insert>
 
     <insert id="insertOrderProductBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
         insert into order_product
-        (order_id, product_id, product_name, product_image, product_spec, price, quantity, total_price, create_time, update_time)
+        (order_id, product_id, product_name, product_image, product_spec, price, quantity, total_price)
         values
         <foreach collection="list" item="item" separator=",">
             (#{item.orderId}, #{item.productId}, #{item.productName}, #{item.productImage}, #{item.productSpec},
-             #{item.price}, #{item.quantity}, #{item.totalPrice}, #{item.createTime}, #{item.updateTime})
+             #{item.price}, #{item.quantity}, #{item.totalPrice})
         </foreach>
     </insert>
 
@@ -97,8 +91,6 @@
             <if test="price != null">price = #{price},</if>
             <if test="quantity != null">quantity = #{quantity},</if>
             <if test="totalPrice != null">total_price = #{totalPrice},</if>
-            <if test="createTime != null">create_time = #{createTime},</if>
-            <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
         where id = #{id}
     </update>

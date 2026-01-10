@@ -37,6 +37,9 @@
           <router-link to="/user/profile">
             <el-dropdown-item>个人中心</el-dropdown-item>
           </router-link>
+          <router-link to="/order/order">
+            <el-dropdown-item>我的订单</el-dropdown-item>
+          </router-link>
           <el-dropdown-item @click.native="setLayout" v-if="setting">
             <span>布局设置</span>
           </el-dropdown-item>

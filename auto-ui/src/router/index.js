@@ -87,6 +87,26 @@ export const constantRoutes = [
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
+  },
+  {
+    path: '/order',
+    component: Layout,
+    hidden: true,
+    redirect: 'noredirect',
+    children: [
+      {
+        path: 'checkout',
+        component: () => import('@/views/order/checkout/index1.vue'),
+        name: 'OrderCheckout',
+        meta: { title: '订单结算', icon: 'shopping-cart' }
+      },
+      {
+        path: 'order',
+        component: () => import('@/views/order/order/index.vue'),
+        name: 'OrderList',
+        meta: { title: '我的订单', icon: 'shopping' }
+      }
+    ]
   }
 ]
 
