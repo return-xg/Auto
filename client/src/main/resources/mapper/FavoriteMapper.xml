@@ -4,11 +4,21 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.auto.mapper.FavoriteMapper">
 
-    <resultMap type="Favorite" id="FavoriteResult">
+    <resultMap type="com.auto.domain.Favorite" id="FavoriteResult">
         <result property="id"    column="id"    />
         <result property="userId"    column="user_id"    />
         <result property="productId"    column="product_id"    />
         <result property="createTime"    column="create_time"    />
+        <association property="product" javaType="com.auto.domain.Product">
+            <result property="id" column="product_id" />
+            <result property="name" column="product_name" />
+            <result property="brand" column="product_brand" />
+            <result property="mainImage" column="product_main_image" />
+            <result property="price" column="product_price" />
+            <result property="stock" column="product_stock" />
+            <result property="sales" column="product_sales" />
+            <result property="status" column="product_status" />
+        </association>
     </resultMap>
 
     <sql id="selectFavoriteVo">
@@ -16,16 +26,20 @@
     </sql>
 
     <select id="selectFavoriteList" parameterType="Favorite" resultMap="FavoriteResult">
-        <include refid="selectFavoriteVo"/>
+        select f.id, f.user_id, f.product_id, f.create_time,
+               p.name as product_name, p.brand as product_brand, p.main_image as product_main_image,
+               p.price as product_price, p.stock as product_stock, p.sales as product_sales, p.status as product_status
+        from favorite f
+        left join product p on f.product_id = p.id
         <where>
             <if test="userId != null">
-                and user_id = #{userId}
+                and f.user_id = #{userId}
             </if>
             <if test="productId != null">
-                and product_id = #{productId}
+                and f.product_id = #{productId}
             </if>
         </where>
-        order by create_time desc
+        order by f.create_time desc
     </select>
 
     <select id="selectFavoriteByUserAndProduct" resultMap="FavoriteResult">

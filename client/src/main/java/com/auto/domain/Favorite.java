@@ -26,6 +26,9 @@ public class Favorite extends BaseEntity
     @Excel(name = "商品ID")
     private Long productId;
 
+    /** 商品信息 */
+    private Product product;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -54,6 +57,16 @@ public class Favorite extends BaseEntity
     public Long getProductId()
     {
         return productId;
+    }
+
+    public Product getProduct()
+    {
+        return product;
+    }
+
+    public void setProduct(Product product)
+    {
+        this.product = product;
     }
 
     @Override
