@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 订单商品管理控制器
+ * 提供订单商品的增删改查等操作接口
+ */
 @RestController
 @RequestMapping("/order-product")
 public class OrderProductController {
@@ -16,6 +20,12 @@ public class OrderProductController {
     @Autowired
     private IOrderProductService orderProductService;
 
+    /**
+     * 根据ID获取订单商品详情
+     *
+     * @param id 订单商品ID
+     * @return 订单商品详情视图对象
+     */
     @GetMapping("/{id}")
     public AjaxResult getOrderProductById(@PathVariable Long id) {
         try {
@@ -26,6 +36,12 @@ public class OrderProductController {
         }
     }
 
+    /**
+     * 根据订单ID获取订单商品列表
+     *
+     * @param orderId 订单ID
+     * @return 订单商品列表视图对象
+     */
     @GetMapping("/list/orderId/{orderId}")
     public AjaxResult getOrderProductListByOrderId(@PathVariable Long orderId) {
         try {
@@ -36,6 +52,12 @@ public class OrderProductController {
         }
     }
 
+    /**
+     * 获取订单商品列表（支持条件查询）
+     *
+     * @param orderProduct 订单商品查询条件
+     * @return 订单商品列表视图对象
+     */
     @GetMapping("/list")
     public AjaxResult getOrderProductList(OrderProduct orderProduct) {
         try {
@@ -46,6 +68,12 @@ public class OrderProductController {
         }
     }
 
+    /**
+     * 添加新的订单商品
+     *
+     * @param orderProduct 订单商品实体
+     * @return 操作结果
+     */
     @PostMapping("/add")
     public AjaxResult addOrderProduct(@RequestBody OrderProduct orderProduct) {
         try {
@@ -56,6 +84,12 @@ public class OrderProductController {
         }
     }
 
+    /**
+     * 更新订单商品信息
+     *
+     * @param orderProduct 订单商品实体
+     * @return 操作结果
+     */
     @PutMapping("/update")
     public AjaxResult updateOrderProduct(@RequestBody OrderProduct orderProduct) {
         try {
@@ -66,6 +100,12 @@ public class OrderProductController {
         }
     }
 
+    /**
+     * 根据ID删除订单商品
+     *
+     * @param id 订单商品ID
+     * @return 操作结果
+     */
     @DeleteMapping("/{id}")
     public AjaxResult deleteOrderProduct(@PathVariable Long id) {
         try {
@@ -76,6 +116,12 @@ public class OrderProductController {
         }
     }
 
+    /**
+     * 批量删除订单商品
+     *
+     * @param ids 订单商品ID数组
+     * @return 操作结果
+     */
     @DeleteMapping("/batch")
     public AjaxResult deleteOrderProductByIds(@RequestBody Long[] ids) {
         try {
@@ -86,6 +132,12 @@ public class OrderProductController {
         }
     }
 
+    /**
+     * 根据订单ID删除订单商品
+     *
+     * @param orderId 订单ID
+     * @return 操作结果
+     */
     @DeleteMapping("/orderId/{orderId}")
     public AjaxResult deleteOrderProductByOrderId(@PathVariable Long orderId) {
         try {

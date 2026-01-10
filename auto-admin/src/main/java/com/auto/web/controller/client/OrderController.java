@@ -11,6 +11,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 订单Controller
+ *
+ * @author auto
+ */
 @RestController
 @RequestMapping("/order")
 public class OrderController {
@@ -18,6 +23,12 @@ public class OrderController {
     @Autowired
     private IOrderService orderService;
 
+    /**
+     * 创建订单
+     *
+     * @param createOrderDTO 订单创建参数对象，包含商品信息、用户信息、地址等
+     * @return AjaxResult 包含创建结果的响应对象
+     */
     @PostMapping("/create")
     public AjaxResult createOrder(@RequestBody CreateOrderDTO createOrderDTO) {
         try {
@@ -28,6 +39,12 @@ public class OrderController {
         }
     }
 
+    /**
+     * 根据ID查询订单详情
+     *
+     * @param id 订单ID
+     * @return AjaxResult 包含订单详细信息的响应对象
+     */
     @GetMapping("/{id}")
     public AjaxResult getOrderById(@PathVariable Long id) {
         try {
@@ -38,6 +55,12 @@ public class OrderController {
         }
     }
 
+    /**
+     * 根据订单号查询订单
+     *
+     * @param orderNo 订单号
+     * @return AjaxResult 包含订单信息的响应对象
+     */
     @GetMapping("/orderNo/{orderNo}")
     public AjaxResult getOrderByOrderNo(@PathVariable String orderNo) {
         try {
@@ -48,6 +71,13 @@ public class OrderController {
         }
     }
 
+    /**
+     * 获取用户订单列表
+     *
+     * @param userId 用户ID
+     * @param status 订单状态(可选)，如果不传则返回全部状态的订单
+     * @return AjaxResult 包含订单列表的响应对象
+     */
     @GetMapping("/list")
     public AjaxResult getOrderList(@RequestParam Long userId, @RequestParam(required = false) Long status) {
         try {
@@ -63,6 +93,14 @@ public class OrderController {
         }
     }
 
+    /**
+     * 订单支付
+     *
+     * @param orderId 订单ID
+     * @param payType 支付方式
+     * @param success 支付是否成功
+     * @return AjaxResult 包含支付结果的响应对象
+     */
     @PostMapping("/pay")
     public AjaxResult payOrder(@RequestParam Long orderId, @RequestParam Integer payType, @RequestParam Boolean success) {
         try {
@@ -77,6 +115,13 @@ public class OrderController {
         }
     }
 
+    /**
+     * 取消订单
+     *
+     * @param orderId 订单ID
+     * @param reason 取消原因(可选)
+     * @return AjaxResult 包含取消订单后信息的响应对象
+     */
     @PostMapping("/cancel")
     public AjaxResult cancelOrder(@RequestParam Long orderId, @RequestParam(required = false) String reason) {
         try {
@@ -87,6 +132,12 @@ public class OrderController {
         }
     }
 
+    /**
+     * 确认收货
+     *
+     * @param orderId 订单ID
+     * @return AjaxResult 包含确认收货后订单信息的响应对象
+     */
     @PostMapping("/confirm")
     public AjaxResult confirmOrder(@RequestParam Long orderId) {
         try {
@@ -97,6 +148,12 @@ public class OrderController {
         }
     }
 
+    /**
+     * 查询订单物流信息
+     *
+     * @param orderId 订单ID
+     * @return AjaxResult 包含物流信息的响应对象
+     */
     @GetMapping("/logistics/{orderId}")
     public AjaxResult getLogistics(@PathVariable Long orderId) {
         try {
@@ -107,6 +164,12 @@ public class OrderController {
         }
     }
 
+    /**
+     * 申请退款
+     *
+     * @param refundApplyDTO 退款申请参数对象
+     * @return AjaxResult 包含退款申请结果的响应对象
+     */
     @PostMapping("/refund")
     public AjaxResult applyRefund(@RequestBody RefundApplyDTO refundApplyDTO) {
         try {
