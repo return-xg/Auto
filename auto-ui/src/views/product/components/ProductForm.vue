@@ -96,14 +96,43 @@
       <el-row :gutter="20">
         <el-col :span="24">
           <el-form-item label="规格参数" prop="spec">
-            <el-input v-model="form.spec" type="textarea" :rows="4" placeholder="请输入规格参数(JSON格式)" />
+            <div class="spec-container">
+              <div v-for="(specItem, index) in specList" :key="index" class="spec-item">
+                <div class="spec-item-header">
+                  <el-input v-model="specItem.name" placeholder="规格名称（如：颜色、尺寸）" style="width: 200px;" />
+                  <el-button type="danger" icon="el-icon-delete" size="small" @click="removeSpecItem(index)" circle />
+                </div>
+                <div class="spec-values">
+                  <el-tag
+                    v-for="(value, vIndex) in specItem.values"
+                    :key="vIndex"
+                    closable
+                    @close="removeSpecValue(index, vIndex)"
+                    style="margin-right: 8px; margin-bottom: 8px;"
+                  >
+                    {{ value }}
+                  </el-tag>
+                  <el-input
+                    v-if="specItem.inputVisible"
+                    ref="specInput"
+                    v-model="specItem.inputValue"
+                    size="small"
+                    style="width: 120px;"
+                    @blur="handleSpecInputConfirm(index)"
+                    @keyup.enter.native="handleSpecInputConfirm(index)"
+                  />
+                  <el-button v-else size="small" icon="el-icon-plus" @click="showSpecInput(index)">添加规格值</el-button>
+                </div>
+              </div>
+              <el-button type="primary" icon="el-icon-plus" @click="addSpecItem" style="margin-top: 10px;">添加规格项</el-button>
+            </div>
           </el-form-item>
         </el-col>
       </el-row>
       <el-row :gutter="20">
         <el-col :span="24">
           <el-form-item label="商品详情" prop="detail">
-            <el-input v-model="form.detail" type="textarea" :rows="6" placeholder="请输入商品详情(支持HTML格式)" />
+            <el-input v-model="form.detail" type="textarea" :rows="6" placeholder="请输入商品详情" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -158,6 +187,7 @@ export default {
         sales: 0,
         status: 1
       },
+      specList: [],
       mainImageFileList: [],
       subImageFileList: [],
       mainImageFile: null,
@@ -197,6 +227,7 @@ export default {
           this.form.subImages = JSON.stringify(this.form.subImages)
         }
         this.initImageFileLists()
+        this.initSpecList()
       } else {
         this.form = {
           id: null,
@@ -218,6 +249,7 @@ export default {
         this.subImageFileList = []
         this.mainImageFile = null
         this.subImageFiles = []
+        this.specList = []
       }
     },
     initImageFileLists() {
@@ -237,6 +269,61 @@ export default {
         console.error('解析附图数据失败:', e)
         this.subImageFileList = []
       }
+    },
+    initSpecList() {
+      try {
+        if (this.form.spec) {
+          const specData = typeof this.form.spec === 'string' ? JSON.parse(this.form.spec) : this.form.spec
+          if (Array.isArray(specData)) {
+            this.specList = specData.map(item => ({
+              name: item.name || '',
+              values: Array.isArray(item.values) ? item.values : [],
+              inputVisible: false,
+              inputValue: ''
+            }))
+          } else {
+            this.specList = []
+          }
+        } else {
+          this.specList = []
+        }
+      } catch (e) {
+        console.error('解析规格数据失败:', e)
+        this.specList = []
+      }
+    },
+    addSpecItem() {
+      this.specList.push({
+        name: '',
+        values: [],
+        inputVisible: false,
+        inputValue: ''
+      })
+    },
+    removeSpecItem(index) {
+      this.specList.splice(index, 1)
+    },
+    showSpecInput(index) {
+      this.specList[index].inputVisible = true
+      this.$nextTick(() => {
+        const input = this.$refs.specInput && this.$refs.specInput[index]
+        if (input && input.$el) {
+          input.$el.querySelector('input').focus()
+        }
+      })
+    },
+    handleSpecInputConfirm(index) {
+      const inputValue = this.specList[index].inputValue.trim()
+      if (inputValue) {
+        if (!this.specList[index].values.includes(inputValue)) {
+          this.specList[index].values.push(inputValue)
+        }
+      }
+      this.specList[index].inputVisible = false
+      this.specList[index].inputValue = ''
+    },
+    removeSpecValue(index, vIndex) {
+      this.specList[index].values.splice(vIndex, 1)
     },
     getImageUrl(url) {
       if (!url) return ''
@@ -300,7 +387,13 @@ export default {
           formData.append('brand', this.form.brand || '')
           formData.append('name', this.form.name || '')
           formData.append('detail', this.form.detail || '')
-          formData.append('spec', this.form.spec || '')
+
+          const specData = this.specList.filter(item => item.name && item.values.length > 0).map(item => ({
+            name: item.name,
+            values: item.values
+          }))
+          formData.append('spec', JSON.stringify(specData))
+
           formData.append('fitCarModel', this.form.fitCarModel || '')
           formData.append('price', this.form.price || 0)
           formData.append('stock', this.form.stock || 0)
@@ -352,6 +445,38 @@ export default {
 <style scoped>
 .dialog-footer {
   text-align: center;
+}
+
+.spec-container {
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  padding: 15px;
+  background-color: #f9f9f9;
+}
+
+.spec-item {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+}
+
+.spec-item:last-child {
+  margin-bottom: 0;
+}
+
+.spec-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.spec-values {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 /* 调整分隔线样式 */

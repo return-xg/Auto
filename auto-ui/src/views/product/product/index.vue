@@ -25,9 +25,6 @@
         <el-form-item label="适配车型">
           <el-input v-model="queryForm.carModel" placeholder="适配车型" clearable />
         </el-form-item>
-        <el-form-item label="适配年份">
-          <el-input v-model="queryForm.year" placeholder="适配年份" clearable />
-        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click.stop="handleQuery">
             <i class="el-icon-search"></i> 查询
@@ -85,7 +82,17 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="spec" label="规格参数" show-overflow-tooltip width="150" />
+        <el-table-column prop="spec" label="规格参数" show-overflow-tooltip width="200">
+          <template slot-scope="scope">
+            <div v-if="getSpecDisplay(scope.row.spec)" class="spec-display">
+              <div v-for="(item, index) in getSpecDisplay(scope.row.spec)" :key="index" class="spec-item">
+                <span class="spec-name">{{ item.name }}:</span>
+                <span class="spec-values">{{ item.values.join(', ') }}</span>
+              </div>
+            </div>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="fitCarModel" label="适配车型" show-overflow-tooltip width="150" />
         <el-table-column prop="subImages" label="附图" width="150">
           <template slot-scope="scope">
@@ -103,20 +110,6 @@
               </el-image>
             </div>
             <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="isHot" label="热销" width="80">
-          <template slot-scope="scope">
-            <el-tag :type="scope.row.isHot === 1 ? 'danger' : 'info'">
-              {{ scope.row.isHot === 1 ? '是' : '否' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="isNew" label="新品" width="80">
-          <template slot-scope="scope">
-            <el-tag :type="scope.row.isNew === 1 ? 'success' : 'info'">
-              {{ scope.row.isNew === 1 ? '是' : '否' }}
-            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="商品详情" width="120">
@@ -550,6 +543,17 @@ export default {
         console.error('解析附图数据失败:', error)
         return []
       }
+    },
+    // 解析规格参数JSON
+    getSpecDisplay(specStr) {
+      try {
+        if (!specStr) return null
+        const parsed = JSON.parse(specStr)
+        return Array.isArray(parsed) && parsed.length > 0 ? parsed : null
+      } catch (error) {
+        console.error('解析规格参数数据失败:', error)
+        return null
+      }
     }
   }
 }
@@ -631,5 +635,28 @@ export default {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
+}
+
+/* 规格参数显示样式 */
+.spec-display {
+  font-size: 12px;
+}
+
+.spec-item {
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.spec-item:last-child {
+  margin-bottom: 0;
+}
+
+.spec-name {
+  color: #909399;
+  font-weight: 500;
+}
+
+.spec-values {
+  color: #303133;
 }
 </style>
