@@ -43,6 +43,9 @@
             <if test="name != null and name != ''">
                 and name like concat('%', #{name}, '%')
             </if>
+            <if test="fitCarModel != null and fitCarModel != ''">
+                and fit_car_model like concat('%', #{fitCarModel}, '%')
+            </if>
             <if test="status != null">
                 and status = #{status}
             </if>
