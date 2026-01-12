@@ -60,13 +60,23 @@
                   <span v-if="product.stock <= product.warnStock" class="warn-text">(库存紧张)</span>
                 </span>
               </div>
-              <div class="info-item">
-                <span class="label">适配车型：</span>
-                <span class="value">{{ product.fitCarModel || '-' }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">适用年份：</span>
-                <span class="value">{{ product.year || '-' }}</span>
+            </div>
+
+            <div class="spec-section" v-if="parsedSpecList.length > 0">
+              <div v-for="(specItem, index) in parsedSpecList" :key="index" class="spec-item">
+                <div class="spec-name">{{ specItem.name }}：</div>
+                <div class="spec-values">
+                  <el-tag
+                    v-for="(value, vIndex) in specItem.values"
+                    :key="vIndex"
+                    :type="selectedSpecs[specItem.name] === value ? 'primary' : 'info'"
+                    :effect="selectedSpecs[specItem.name] === value ? 'dark' : 'plain'"
+                    @click="selectSpec(specItem.name, value)"
+                    class="spec-tag"
+                  >
+                    {{ value }}
+                  </el-tag>
+                </div>
               </div>
             </div>
 
@@ -101,32 +111,17 @@
         </el-tab-pane>
 
         <el-tab-pane label="规格参数" name="spec">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="商品名称">{{ product.name }}</el-descriptions-item>
-            <el-descriptions-item label="品牌">{{ product.brand }}</el-descriptions-item>
-            <el-descriptions-item label="分类">{{ getCategoryName() }}</el-descriptions-item>
-            <el-descriptions-item label="适配车型">{{ product.fitCarModel || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="适用年份">{{ product.year || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="库存">{{ product.stock }}</el-descriptions-item>
-            <el-descriptions-item label="规格参数" :span="2">{{ product.spec || '-' }}</el-descriptions-item>
-          </el-descriptions>
-        </el-tab-pane>
-
-        <el-tab-pane label="用户评论" name="comment">
-          <div v-if="comments.length > 0" class="comment-list">
-            <div v-for="comment in comments" :key="comment.id" class="comment-item">
-              <div class="comment-header">
-                <span class="comment-user">{{ comment.userName }}</span>
-                <el-rate v-model="comment.rating" disabled show-score text-color="#ff9900"></el-rate>
-                <span class="comment-time">{{ comment.createTime }}</span>
+          <div v-if="parsedSpecList.length > 0" class="spec-detail">
+            <div v-for="(specItem, index) in parsedSpecList" :key="index" class="spec-detail-item">
+              <div class="spec-detail-name">{{ specItem.name }}</div>
+              <div class="spec-detail-values">
+                <el-tag v-for="(value, vIndex) in specItem.values" :key="vIndex" type="info" size="small">
+                  {{ value }}
+                </el-tag>
               </div>
-              <div class="comment-content">{{ comment.content }}</div>
             </div>
           </div>
-          <div v-else class="empty-comments">
-            <i class="el-icon-chat-line-square"></i>
-            <p>暂无评论</p>
-          </div>
+          <div v-else class="no-spec">暂无规格参数</div>
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -160,6 +155,8 @@ export default {
       quantity: 1,
       activeTab: 'detail',
       categoryList: [],
+      selectedSpecs: {},
+      specList: [],
       comments: [
         {
           id: 1,
@@ -182,19 +179,33 @@ export default {
     allImages() {
       const images = []
       if (this.product.mainImage) {
-        images.push(this.product.mainImage)
+        images.push(this.getImageUrl(this.product.mainImage))
       }
       if (this.product.subImages) {
         try {
           const subImages = JSON.parse(this.product.subImages)
           if (Array.isArray(subImages)) {
-            images.push(...subImages)
+            subImages.forEach(img => {
+              images.push(this.getImageUrl(img))
+            })
           }
         } catch (e) {
           console.error('解析附图失败:', e)
         }
       }
       return images.length > 0 ? images : ['/static/images/default-product.png']
+    },
+    parsedSpecList() {
+      if (!this.product.spec) return []
+      try {
+        const specData = typeof this.product.spec === 'string' ? JSON.parse(this.product.spec) : this.product.spec
+        if (Array.isArray(specData)) {
+          return specData
+        }
+      } catch (e) {
+        console.error('解析规格参数失败:', e)
+      }
+      return []
     }
   },
   watch: {
@@ -209,9 +220,17 @@ export default {
     },
     product() {
       this.quantity = 1
+      this.selectedSpecs = {}
     }
   },
   methods: {
+    getImageUrl(url) {
+      if (!url) return ''
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url
+      }
+      return process.env.VUE_APP_BASE_API + url
+    },
     loadCategories() {
       listCategory({ pageNum: 1, pageSize: 100 }).then(response => {
         if (response.code === 200) {
@@ -224,10 +243,30 @@ export default {
       const category = this.categoryList.find(cat => cat.id === this.product.categoryId)
       return category ? category.name : '-'
     },
+    selectSpec(specName, value) {
+      if (this.selectedSpecs[specName] === value) {
+        this.$delete(this.selectedSpecs, specName)
+      } else {
+        this.$set(this.selectedSpecs, specName, value)
+      }
+    },
+    getSelectedSpecText() {
+      const specs = []
+      for (const [key, value] of Object.entries(this.selectedSpecs)) {
+        specs.push(`${key}:${value}`)
+      }
+      return specs.join(' ')
+    },
     handleAddToCart() {
+      if (this.parsedSpecList.length > 0 && Object.keys(this.selectedSpecs).length === 0) {
+        this.$message.warning('请选择商品规格')
+        return
+      }
       this.$emit('add-to-cart', {
         ...this.product,
-        quantity: this.quantity
+        quantity: this.quantity,
+        selectedSpecs: { ...this.selectedSpecs },
+        specText: this.getSelectedSpecText()
       })
     },
     handleBuyNow() {
@@ -336,6 +375,45 @@ export default {
     }
   }
 
+  .spec-section {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+
+    .spec-item {
+      margin-bottom: 15px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .spec-name {
+        font-size: 14px;
+        color: #606266;
+        margin-bottom: 10px;
+        font-weight: 500;
+      }
+
+      .spec-values {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+
+        .spec-tag {
+          cursor: pointer;
+          transition: all 0.3s;
+          user-select: none;
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          }
+        }
+      }
+    }
+  }
+
   .quantity-section {
     display: flex;
     align-items: center;
@@ -368,53 +446,38 @@ export default {
   line-height: 1.8;
 }
 
-.comment-list {
-  .comment-item {
-    padding: 20px;
-    border-bottom: 1px solid #e4e7ed;
+.spec-detail {
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+
+  .spec-detail-item {
+    margin-bottom: 20px;
 
     &:last-child {
-      border-bottom: none;
+      margin-bottom: 0;
     }
 
-    .comment-header {
+    .spec-detail-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #303133;
+      margin-bottom: 12px;
+    }
+
+    .spec-detail-values {
       display: flex;
-      align-items: center;
-      gap: 20px;
-      margin-bottom: 10px;
-
-      .comment-user {
-        font-weight: bold;
-        color: #303133;
-      }
-
-      .comment-time {
-        color: #909399;
-        font-size: 12px;
-        margin-left: auto;
-      }
-    }
-
-    .comment-content {
-      color: #606266;
-      line-height: 1.6;
+      flex-wrap: wrap;
+      gap: 10px;
     }
   }
 }
 
-.empty-comments {
+.no-spec {
+  padding: 40px;
   text-align: center;
-  padding: 60px 0;
   color: #909399;
-
-  i {
-    font-size: 64px;
-    margin-bottom: 20px;
-    display: block;
-  }
-
-  p {
-    font-size: 16px;
-  }
+  background-color: #f9f9f9;
+  border-radius: 8px;
 }
 </style>

@@ -42,26 +42,6 @@
                 />
               </el-select>
             </el-form-item>
-            <el-form-item label="适配车型">
-              <el-select v-model="filterForm.carModel" placeholder="选择车型" clearable style="width: 100%;">
-                <el-option
-                  v-for="model in carModelOptions"
-                  :key="model"
-                  :label="model"
-                  :value="model"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="适用年份">
-              <el-select v-model="filterForm.year" placeholder="选择年份" clearable style="width: 100%;">
-                <el-option
-                  v-for="year in yearOptions"
-                  :key="year"
-                  :label="year"
-                  :value="year"
-                />
-              </el-select>
-            </el-form-item>
             <el-form-item label="价格区间">
               <el-row :gutter="10">
                 <el-col :span="12">
@@ -73,8 +53,14 @@
               </el-row>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="handleFilter" style="width: 100%;">应用筛选</el-button>
-              <el-button @click="resetFilter" style="width: 100%; margin-top: 10px;">重置</el-button>
+              <el-row :gutter="10">
+                <el-col :span="12">
+                  <el-button type="primary" @click="handleFilter" style="width: 100%;">应用筛选</el-button>
+                </el-col>
+                <el-col :span="12">
+                  <el-button @click="resetFilter" style="width: 100%;">重置</el-button>
+                </el-col>
+              </el-row>
             </el-form-item>
           </el-form>
         </el-card>
@@ -86,7 +72,7 @@
             <el-col :span="18">
               <el-input
                 v-model="searchKeyword"
-                placeholder="搜索配件名称、品牌、车型、生产年份等"
+                placeholder="搜索配件名称"
                 clearable
                 @keyup.enter.native="handleSearch"
               >
@@ -99,7 +85,6 @@
                 <el-option label="价格从低到高" value="price_asc" />
                 <el-option label="价格从高到低" value="price_desc" />
                 <el-option label="销量从高到低" value="sales_desc" />
-                <el-option label="上架时间" value="time_desc" />
               </el-select>
             </el-col>
           </el-row>
@@ -115,7 +100,7 @@
             >
               <div class="product-image">
                 <el-image
-                  :src="product.mainImage || '/static/images/default-product.png'"
+                  :src="getProductCoverImage(product)"
                   fit="cover"
                   style="width: 100%; height: 200px;"
                 >
@@ -220,6 +205,34 @@ export default {
       favoriteProducts: new Set()
     }
   },
+  computed: {
+    getProductCoverImage() {
+      return (product) => {
+        let imageUrl = ''
+        if (product.mainImage) {
+          imageUrl = product.mainImage
+        } else if (product.subImages) {
+          try {
+            const subImages = JSON.parse(product.subImages)
+            if (Array.isArray(subImages) && subImages.length > 0) {
+              imageUrl = subImages[0]
+            }
+          } catch (e) {
+            console.error('解析附图失败:', e)
+          }
+        }
+
+        if (!imageUrl) {
+          return '/static/images/default-product.png'
+        }
+
+        if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+          return imageUrl
+        }
+        return process.env.VUE_APP_BASE_API + imageUrl
+      }
+    }
+  },
   mounted() {
     this.loadCategories()
     this.loadFavorites()
@@ -253,35 +266,35 @@ export default {
         pageSize: this.pagination.size,
         status: 1
       }
-      
+
       if (this.activeCategory) {
         queryParams.categoryId = Number(this.activeCategory)
       }
-      
+
       if (this.searchKeyword) {
         queryParams.keyword = this.searchKeyword
       }
-      
+
       if (this.filterForm.brand) {
         queryParams.brand = this.filterForm.brand
       }
-      
+
       if (this.filterForm.carModel) {
         queryParams.carModel = this.filterForm.carModel
       }
-      
+
       if (this.filterForm.year) {
         queryParams.year = Number(this.filterForm.year)
       }
-      
+
       if (this.filterForm.priceMin) {
         queryParams.priceMin = Number(this.filterForm.priceMin)
       }
-      
+
       if (this.filterForm.priceMax) {
         queryParams.priceMax = Number(this.filterForm.priceMax)
       }
-      
+
       if (this.sortBy) {
         const sortMap = {
           price_asc: 'price_asc',
@@ -293,7 +306,7 @@ export default {
       }
 
       const apiCall = this.searchKeyword ? searchProduct : listProduct
-      
+
       apiCall(queryParams).then(response => {
         this.loading = false
         if (response.code === 200) {

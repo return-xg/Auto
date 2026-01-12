@@ -48,7 +48,8 @@ public class ProductController extends BaseController
             @RequestParam(required = false) BigDecimal priceMin,
             @RequestParam(required = false) BigDecimal priceMax,
             @RequestParam(required = false) String carModel,
-            @RequestParam(required = false) String year)
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) Integer status)
     {
         startPage();
         Product product = new Product();
@@ -58,6 +59,7 @@ public class ProductController extends BaseController
         product.setOrderBy(orderBy);
         product.setPriceMin(priceMin);
         product.setPriceMax(priceMax);
+        product.setStatus(status);
         if (carModel != null || year != null)
         {
             // 构建适配车型查询条件
@@ -99,12 +101,14 @@ public class ProductController extends BaseController
             @RequestParam(required = false) String brand,
             @RequestParam(required = false) String carModel,
             @RequestParam(required = false) String year,
-            @RequestParam(required = false) String orderBy)
+            @RequestParam(required = false) String orderBy,
+            @RequestParam(required = false) Integer status)
     {
         startPage();
         Product product = new Product();
         product.setName(keyword);
         product.setBrand(brand);
+        product.setStatus(status);
         if (carModel != null || year != null)
         {
             String fitCarModel = "";

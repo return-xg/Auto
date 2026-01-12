@@ -55,8 +55,30 @@
             <if test="isNew != null">
                 and is_new = #{isNew}
             </if>
+            <if test="priceMin != null">
+                and price &gt;= #{priceMin}
+            </if>
+            <if test="priceMax != null">
+                and price &lt;= #{priceMax}
+            </if>
         </where>
-        order by create_time desc
+        <choose>
+            <when test="orderBy != null and orderBy == 'price_asc'">
+                order by price asc
+            </when>
+            <when test="orderBy != null and orderBy == 'price_desc'">
+                order by price desc
+            </when>
+            <when test="orderBy != null and orderBy == 'sales_desc'">
+                order by sales desc
+            </when>
+            <when test="orderBy != null and orderBy == 'time_desc'">
+                order by create_time desc
+            </when>
+            <otherwise>
+                order by create_time desc
+            </otherwise>
+        </choose>
     </select>
 
     <select id="selectProductById" parameterType="Long" resultMap="ProductResult">
@@ -108,7 +130,12 @@
 
     <select id="selectProductListByCategory" parameterType="Long" resultMap="ProductResult">
         <include refid="selectProductVo"/>
-        where category_id = #{categoryId} and status = 1
+        <where>
+            <if test="categoryId != null">
+                and category_id = #{categoryId}
+            </if>
+            and status = 1
+        </where>
     </select>
 
     <insert id="insertProduct" parameterType="Product" useGeneratedKeys="true" keyProperty="id">
