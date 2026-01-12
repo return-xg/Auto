@@ -84,22 +84,24 @@
     >
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="门店编号" align="center" prop="id" width="80" />
-      <el-table-column label="门店名称" align="center" prop="name" width="150" show-overflow-tooltip />
-      <el-table-column label="省份" align="center" prop="province" width="100" />
-      <el-table-column label="城市" align="center" prop="city" width="100" />
-      <el-table-column label="区/县" align="center" prop="district" width="100" />
-      <el-table-column label="详细地址" align="center" prop="address" width="200" show-overflow-tooltip />
-      <el-table-column label="联系电话" align="center" prop="phone" width="120" />
-      <el-table-column label="营业时间" align="center" prop="businessHours" width="150" show-overflow-tooltip />
-      <el-table-column label="状态" align="center" prop="status" width="80">
+      <el-table-column label="门店名称" align="center" prop="name" width="120" show-overflow-tooltip />
+      <el-table-column label="地区" align="center" prop="region" width="200" show-overflow-tooltip>
+        <template slot-scope="scope">
+          {{ scope.row.province }} {{ scope.row.city }} {{ scope.row.district }}
+        </template>
+      </el-table-column>
+      <el-table-column label="详细地址" align="center" prop="address" width="240" show-overflow-tooltip />
+      <el-table-column label="联系电话" align="center" prop="phone" width="110" />
+      <el-table-column label="营业时间" align="center" prop="businessHours" width="110" show-overflow-tooltip />
+      <el-table-column label="状态" align="center" prop="status" width="70">
         <template slot-scope="scope">
           <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
             {{ scope.row.status === 1 ? '营业' : '停业' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="150" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
         <template slot-scope="scope">
           <el-button
             type="primary"
@@ -111,6 +113,7 @@
             type="danger"
             icon="el-icon-delete"
             size="mini"
+            style="margin-left: 8px;"
             @click="handleDelete(scope.row)"
           >删除</el-button>
         </template>
