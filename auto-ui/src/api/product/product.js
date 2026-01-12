@@ -40,7 +40,10 @@ export function addProduct(data) {
   return request({
     url: '/product',
     method: 'post',
-    data: data
+    data: data,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
   })
 }
 
@@ -49,7 +52,10 @@ export function updateProduct(data) {
   return request({
     url: '/product',
     method: 'put',
-    data: data
+    data: data,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
   })
 }
 

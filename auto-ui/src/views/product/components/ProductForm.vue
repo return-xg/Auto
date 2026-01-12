@@ -57,14 +57,15 @@
         <el-col :span="12">
           <el-form-item label="主图" prop="mainImage">
             <el-upload
-              :action="uploadUrl"
+              action="#"
               list-type="picture-card"
-              :on-success="(response, file) => handleMainImageUpload(response, file)"
+              :auto-upload="false"
+              :on-change="handleMainImageChange"
               :on-remove="handleMainImageRemove"
+              :on-exceed="handleMainImageExceed"
               :file-list="mainImageFileList"
               :limit="1"
               :before-upload="beforeMainImageUpload"
-              :headers="uploadHeaders"
               style="display: inline-block;"
             >
               <i class="el-icon-plus"></i>
@@ -74,14 +75,14 @@
         <el-col :span="12">
           <el-form-item label="附图">
             <el-upload
-              :action="uploadUrl"
+              action="#"
               list-type="picture-card"
-              :on-success="(response, file) => handleSubImageUpload(response, file)"
+              :auto-upload="false"
+              :on-change="handleSubImageChange"
               :on-remove="handleSubImageRemove"
               :file-list="subImageFileList"
               :limit="10"
               :before-upload="beforeSubImageUpload"
-              :headers="uploadHeaders"
               style="display: inline-block;"
             >
               <i class="el-icon-plus"></i>
@@ -109,14 +110,13 @@
     </el-form>
     <div slot="footer" class="dialog-footer">
       <el-button @click="handleClose">取消</el-button>
-      <el-button type="primary" @click="handleSubmit">确定</el-button>
+      <el-button type="primary" @click="handleSubmit" :loading="submitting">确定</el-button>
     </div>
   </el-dialog>
 </template>
 
 <script>
 import { addProduct, updateProduct } from '@/api/product/product'
-import { getToken } from '@/utils/auth'
 
 export default {
   name: 'ProductForm',
@@ -141,6 +141,7 @@ export default {
   data() {
     return {
       title: '',
+      submitting: false,
       form: {
         id: null,
         categoryId: null,
@@ -159,26 +160,16 @@ export default {
       },
       mainImageFileList: [],
       subImageFileList: [],
+      mainImageFile: null,
+      subImageFiles: [],
       rules: {
         categoryId: [{ required: true, message: '请选择商品分类', trigger: 'change' }],
         brand: [{ required: true, message: '请输入品牌名称', trigger: 'blur' }],
         name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
-        mainImage: [{ required: true, message: '请上传主图', trigger: 'change' }], // 必需字段
         price: [{ required: true, message: '请输入商品价格', trigger: 'blur' }, { type: 'number', min: 0.01 }],
         stock: [{ required: true, message: '请输入库存数量', trigger: 'blur' }, { type: 'number', min: 0 }],
         warnStock: [{ required: true, message: '请输入库存预警值', trigger: 'blur' }, { type: 'number', min: 0 }],
-
         status: [{ required: true, message: '请选择状态', trigger: 'change' }]
-      }
-    }
-  },
-  computed: {
-    uploadUrl() {
-      return process.env.VUE_APP_BASE_API + '/common/upload'
-    },
-    uploadHeaders() {
-      return {
-        Authorization: 'Bearer ' + getToken()
       }
     }
   },
@@ -202,7 +193,6 @@ export default {
     initForm() {
       if (this.editMode && this.product) {
         this.form = { ...this.product }
-        // 如果subImages不是字符串而是数组，需要转换为JSON字符串
         if (Array.isArray(this.form.subImages)) {
           this.form.subImages = JSON.stringify(this.form.subImages)
         }
@@ -226,18 +216,17 @@ export default {
         }
         this.mainImageFileList = []
         this.subImageFileList = []
+        this.mainImageFile = null
+        this.subImageFiles = []
       }
     },
     initImageFileLists() {
-      // 初始化主图文件列表
-      this.mainImageFileList = this.form.mainImage ? [{ url: this.form.mainImage }] : []
-
-      // 初始化附图文件列表
+      this.mainImageFileList = this.form.mainImage ? [{ url: this.getImageUrl(this.form.mainImage), name: '主图' }] : []
       try {
         if (this.form.subImages) {
           const subImages = typeof this.form.subImages === 'string' ? JSON.parse(this.form.subImages) : this.form.subImages
           if (Array.isArray(subImages)) {
-            this.subImageFileList = subImages.map(img => ({ url: img }))
+            this.subImageFileList = subImages.map((img, index) => ({ url: this.getImageUrl(img), name: '附图' + (index + 1) }))
           } else {
             this.subImageFileList = []
           }
@@ -248,6 +237,13 @@ export default {
         console.error('解析附图数据失败:', e)
         this.subImageFileList = []
       }
+    },
+    getImageUrl(url) {
+      if (!url) return ''
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url
+      }
+      return process.env.VUE_APP_BASE_API + url
     },
     beforeMainImageUpload(file) {
       const isJPG = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/gif' || file.type === 'image/webp'
@@ -273,74 +269,76 @@ export default {
       }
       return isImage && isLt2M
     },
-    handleMainImageUpload(response, file) {
-      if (response.code === 200) {
-        this.form.mainImage = response.data.url
-        this.$message.success('主图上传成功')
-      } else {
-        this.$message.error('主图上传失败：' + response.msg)
+    handleMainImageChange(file, fileList) {
+      if (file.status === 'ready') {
+        this.mainImageFile = file.raw
+        this.mainImageFileList = fileList
       }
     },
-    handleMainImageRemove(file, fileList) {
-      this.form.mainImage = ''
+    handleMainImageExceed(files, fileList) {
+      this.$message.warning('主图只能上传一张，请先删除已上传的图片')
     },
-    handleSubImageUpload(response, file) {
-      if (response.code === 200) {
-        // 解析现有的subImages，如果不存在则初始化为空数组
-        let subImages = []
-        try {
-          if (this.form.subImages) {
-            subImages = JSON.parse(this.form.subImages)
-          }
-        } catch (e) {
-          subImages = []
-        }
-        
-        // 添加新上传的图片
-        subImages.push(response.data.url)
-        this.form.subImages = JSON.stringify(subImages)
-        this.$message.success('附图上传成功')
-      } else {
-        this.$message.error('附图上传失败：' + response.msg)
+    handleMainImageRemove(file, fileList) {
+      this.mainImageFile = null
+      this.mainImageFileList = fileList
+    },
+    handleSubImageChange(file, fileList) {
+      if (file.status === 'ready') {
+        this.subImageFiles = fileList.map(f => f.raw).filter(f => f)
+        this.subImageFileList = fileList
       }
     },
     handleSubImageRemove(file, fileList) {
-      try {
-        let subImages = this.form.subImages ? JSON.parse(this.form.subImages) : []
-        const index = subImages.findIndex(img => img === file.url)
-        if (index > -1) {
-          subImages.splice(index, 1)
-          this.form.subImages = JSON.stringify(subImages)
-        }
-      } catch (e) {
-        console.error('处理附图移除失败:', e)
-      }
+      this.subImageFiles = fileList.map(f => f.raw).filter(f => f)
+      this.subImageFileList = fileList
     },
     handleSubmit() {
       this.$refs.form.validate((valid) => {
         if (valid) {
-          const submitData = { ...this.form }
+          const formData = new FormData()
+          formData.append('categoryId', this.form.categoryId || '')
+          formData.append('brand', this.form.brand || '')
+          formData.append('name', this.form.name || '')
+          formData.append('detail', this.form.detail || '')
+          formData.append('spec', this.form.spec || '')
+          formData.append('fitCarModel', this.form.fitCarModel || '')
+          formData.append('price', this.form.price || 0)
+          formData.append('stock', this.form.stock || 0)
+          formData.append('warnStock', this.form.warnStock || 0)
+          formData.append('sales', this.form.sales || 0)
+          formData.append('isHot', this.form.isHot || 0)
+          formData.append('isNew', this.form.isNew || 0)
+          formData.append('status', this.form.status !== null ? this.form.status : 1)
+
           if (this.editMode) {
-            updateProduct(submitData).then(response => {
-              if (response.code === 200) {
-                this.$message.success('修改成功')
-                this.$emit('success')
-                this.handleClose()
-              } else {
-                this.$message.error('修改失败：' + response.msg)
-              }
-            })
-          } else {
-            addProduct(submitData).then(response => {
-              if (response.code === 200) {
-                this.$message.success('添加成功')
-                this.$emit('success')
-                this.handleClose()
-              } else {
-                this.$message.error('添加失败：' + response.msg)
-              }
+            formData.append('id', this.form.id)
+          }
+
+          if (this.mainImageFile) {
+            formData.append('mainImage', this.mainImageFile)
+          }
+
+          if (this.subImageFiles.length > 0) {
+            this.subImageFiles.forEach(file => {
+              formData.append('subImages', file)
             })
           }
+
+          this.submitting = true
+          const request = this.editMode ? updateProduct(formData) : addProduct(formData)
+          request.then(response => {
+            if (response.code === 200) {
+              this.$message.success(this.editMode ? '修改成功' : '添加成功')
+              this.$emit('success')
+              this.handleClose()
+            } else {
+              this.$message.error(response.msg || (this.editMode ? '修改失败' : '添加失败'))
+            }
+          }).catch(error => {
+            this.$message.error((this.editMode ? '修改失败' : '添加失败') + '：' + (error.msg || error.message))
+          }).finally(() => {
+            this.submitting = false
+          })
         }
       })
     },

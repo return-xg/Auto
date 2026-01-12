@@ -1,6 +1,7 @@
 package com.auto.web.controller.client;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,9 +13,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import com.alibaba.fastjson2.JSON;
+import com.auto.common.config.AutoConfig;
 import com.auto.common.core.controller.BaseController;
 import com.auto.common.core.domain.AjaxResult;
 import com.auto.common.core.page.TableDataInfo;
+import com.auto.common.utils.file.FileUploadUtils;
 import com.auto.domain.Product;
 import com.auto.service.IProductService;
 
@@ -130,20 +135,162 @@ public class ProductController extends BaseController
 
     /**
      * 新增商品
+     * @param categoryId 分类ID
+     * @param brand 品牌
+     * @param name 名称
+     * @param mainImage 主图
+     * @param subImages 子图
+     * @param detail 详情
+     * @param spec  规格
+     * @param fitCarModel 适配车型
+     * @param price  价格
+     * @param stock 库存
+     * @param warnStock 预警库存
+     * @param sales 销量
+     * @param isHot 热门
+     * @param isNew 新品
+     * @param status 状态
+     * @return 结果
      */
     @PostMapping
-    public AjaxResult add(@RequestBody Product product)
+    public AjaxResult add(
+            @RequestParam Long categoryId,
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) MultipartFile mainImage,
+            @RequestParam(required = false) MultipartFile[] subImages,
+            @RequestParam(required = false) String detail,
+            @RequestParam(required = false) String spec,
+            @RequestParam(required = false) String fitCarModel,
+            @RequestParam(required = false) BigDecimal price,
+            @RequestParam(required = false) Long stock,
+            @RequestParam(required = false) Long warnStock,
+            @RequestParam(required = false) Long sales,
+            @RequestParam(required = false) Integer isHot,
+            @RequestParam(required = false) Integer isNew,
+            @RequestParam(required = false) Integer status)
     {
-        return toAjax(productService.insertProduct(product));
+        try
+        {
+            Product product = new Product();
+            product.setCategoryId(categoryId);
+            product.setBrand(brand);
+            product.setName(name);
+            product.setDetail(detail);
+            product.setSpec(spec);
+            product.setFitCarModel(fitCarModel);
+            product.setPrice(price);
+            product.setStock(stock);
+            product.setWarnStock(warnStock);
+            product.setSales(sales);
+            product.setIsHot(isHot);
+            product.setIsNew(isNew);
+            product.setStatus(status);
+
+            if (mainImage != null && !mainImage.isEmpty())
+            {
+                String filePath = AutoConfig.getUploadPath();
+                String fileName = FileUploadUtils.upload(filePath, mainImage);
+                product.setMainImage(fileName);
+            }
+
+            if (subImages != null && subImages.length > 0)
+            {
+                String filePath = AutoConfig.getUploadPath();
+                List<String> subImageUrls = new ArrayList<>();
+                for (MultipartFile file : subImages)
+                {
+                    if (!file.isEmpty())
+                    {
+                        String fileName = FileUploadUtils.upload(filePath, file);
+                        subImageUrls.add(fileName);
+                    }
+                }
+                if (!subImageUrls.isEmpty())
+                {
+                    product.setSubImages(JSON.toJSONString(subImageUrls));
+                }
+            }
+
+            return toAjax(productService.insertProduct(product));
+        }
+        catch (Exception e)
+        {
+            return error("新增商品失败：" + e.getMessage());
+        }
     }
 
     /**
      * 修改商品
      */
     @PutMapping
-    public AjaxResult edit(@RequestBody Product product)
+    public AjaxResult edit(
+            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) MultipartFile mainImage,
+            @RequestParam(required = false) MultipartFile[] subImages,
+            @RequestParam(required = false) String detail,
+            @RequestParam(required = false) String spec,
+            @RequestParam(required = false) String fitCarModel,
+            @RequestParam(required = false) BigDecimal price,
+            @RequestParam(required = false) Long stock,
+            @RequestParam(required = false) Long warnStock,
+            @RequestParam(required = false) Long sales,
+            @RequestParam(required = false) Integer isHot,
+            @RequestParam(required = false) Integer isNew,
+            @RequestParam(required = false) Integer status)
     {
-        return toAjax(productService.updateProduct(product));
+        try
+        {
+            Product product = new Product();
+            product.setId(id);
+            product.setCategoryId(categoryId);
+            product.setBrand(brand);
+            product.setName(name);
+            product.setDetail(detail);
+            product.setSpec(spec);
+            product.setFitCarModel(fitCarModel);
+            product.setPrice(price);
+            product.setStock(stock);
+            product.setWarnStock(warnStock);
+            product.setSales(sales);
+            product.setIsHot(isHot);
+            product.setIsNew(isNew);
+            product.setStatus(status);
+
+            if (mainImage != null && !mainImage.isEmpty())
+            {
+                String filePath = AutoConfig.getUploadPath();
+                String fileName = FileUploadUtils.upload(filePath, mainImage);
+                product.setMainImage(fileName);
+            }
+
+            if (subImages != null && subImages.length > 0)
+            {
+                String filePath = AutoConfig.getUploadPath();
+                List<String> subImageUrls = new ArrayList<>();
+                for (MultipartFile file : subImages)
+                {
+                    if (!file.isEmpty())
+                    {
+                        String fileName = FileUploadUtils.upload(filePath, file);
+                        subImageUrls.add(fileName);
+                    }
+                }
+                if (!subImageUrls.isEmpty())
+                {
+                    product.setSubImages(JSON.toJSONString(subImageUrls));
+                }
+            }
+
+            return toAjax(productService.updateProduct(product));
+        }
+        catch (Exception e)
+        {
+            return error("修改商品失败：" + e.getMessage());
+        }
     }
 
     /**

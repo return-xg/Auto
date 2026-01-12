@@ -22,12 +22,6 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="最低价格">
-          <el-input v-model="queryForm.priceMin" type="number" placeholder="最低价格" clearable />
-        </el-form-item>
-        <el-form-item label="最高价格">
-          <el-input v-model="queryForm.priceMax" type="number" placeholder="最高价格" clearable />
-        </el-form-item>
         <el-form-item label="适配车型">
           <el-input v-model="queryForm.carModel" placeholder="适配车型" clearable />
         </el-form-item>
@@ -65,7 +59,7 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="id" label="编号" width="80" />
         <el-table-column prop="name" label="商品名称" show-overflow-tooltip width="200" />
         <el-table-column prop="brand" label="品牌" width="100" />
         <el-table-column prop="categoryId" label="分类" width="120">
@@ -81,8 +75,8 @@
           <template slot-scope="scope">
             <el-image
               v-if="scope.row.mainImage"
-              :src="scope.row.mainImage"
-              :preview-src-list="[scope.row.mainImage]"
+              :src="getImageUrl(scope.row.mainImage)"
+              :preview-src-list="[getImageUrl(scope.row.mainImage)]"
               fit="cover"
               style="width: 80px; height: 80px;"
               :preview-title="scope.row.name"
@@ -99,8 +93,8 @@
               <el-image
                 v-for="(image, index) in getSubImages(scope.row.subImages)"
                 :key="index"
-                :src="image"
-                :preview-src-list="getSubImages(scope.row.subImages)"
+                :src="getImageUrl(image)"
+                :preview-src-list="getSubImages(scope.row.subImages).map(img => getImageUrl(img))"
                 fit="cover"
                 style="width: 40px; height: 40px; margin-right: 5px;"
                 :preview-title="scope.row.name + ' - 附图'"
@@ -520,6 +514,14 @@ export default {
     // 格式化价格
     formatPrice(row, column) {
       return '¥' + Number(row[column.property]).toFixed(2)
+    },
+    // 获取图片完整路径
+    getImageUrl(url) {
+      if (!url) return ''
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url
+      }
+      return process.env.VUE_APP_BASE_API + url
     },
     // 获取分类名称
     getCategoryName(categoryId) {
