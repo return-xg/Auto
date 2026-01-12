@@ -58,6 +58,12 @@ public class UserAddressServiceImpl implements IUserAddressService
         validatePhone(userAddress.getPhone());
         userAddress.setCreateTime(DateUtils.getNowDate());
         userAddress.setUserId(SecurityUtils.getUserId());
+        
+        // 如果设置为默认地址，先取消该用户的所有默认地址
+        if (userAddress.getIsDefault() != null && userAddress.getIsDefault() == 1) {
+            userAddressMapper.cancelAllDefaultAddresses(userAddress.getUserId());
+        }
+        
         return userAddressMapper.insertUserAddress(userAddress);
     }
 
@@ -73,6 +79,15 @@ public class UserAddressServiceImpl implements IUserAddressService
         // 校验手机号
         validatePhone(userAddress.getPhone());
         userAddress.setUpdateTime(DateUtils.getNowDate());
+        
+        // 如果设置为默认地址，先取消该用户的所有默认地址
+        if (userAddress.getIsDefault() != null && userAddress.getIsDefault() == 1) {
+            UserAddress existingAddress = userAddressMapper.selectUserAddressById(userAddress.getId());
+            if (existingAddress != null) {
+                userAddressMapper.cancelAllDefaultAddresses(existingAddress.getUserId());
+            }
+        }
+        
         return userAddressMapper.updateUserAddress(userAddress);
     }
 

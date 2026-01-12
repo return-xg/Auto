@@ -55,7 +55,16 @@
       <el-table-column label="市" align="center" prop="city" />
       <el-table-column label="区/县" align="center" prop="district" />
       <el-table-column label="详细地址" align="center" prop="detail" />
-      <el-table-column label="是否默认地址" align="center" prop="isDefault" />
+      <el-table-column label="是否默认地址" align="center" prop="isDefault" width="120">
+        <template slot-scope="scope">
+          <el-switch
+            v-model="scope.row.isDefault"
+            :active-value="true"
+            :inactive-value="false"
+            @change="handleDefaultChange(scope.row)"
+          />
+        </template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
@@ -177,7 +186,10 @@ export default {
     getList() {
       this.loading = true
       listAddress(this.queryParams).then(response => {
-        this.addressList = response.rows
+        this.addressList = response.rows.map(item => ({
+          ...item,
+          isDefault: item.isDefault === 1 || item.isDefault === true
+        }))
         this.total = response.total
         this.loading = false
       })
@@ -269,6 +281,18 @@ export default {
         this.form.city = CodeToText[value[1]]
         this.form.district = CodeToText[value[2]]
       }
+    },
+    handleDefaultChange(row) {
+      const submitData = {
+        ...row,
+        isDefault: row.isDefault ? 1 : 0
+      }
+      updateAddress(submitData).then(() => {
+        this.$modal.msgSuccess(row.isDefault ? "已设置为默认地址" : "已取消默认地址")
+        this.getList()
+      }).catch(() => {
+        this.getList()
+      })
     },
     findRegionCodes(province, city, district) {
       let provinceCode = null

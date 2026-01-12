@@ -59,4 +59,12 @@ public interface UserAddressMapper
      * @return 结果
      */
     public int deleteUserAddressByIds(Long[] ids);
+
+    /**
+     * 取消用户的所有默认地址
+     * 
+     * @param userId 用户ID
+     * @return 结果
+     */
+    public int cancelAllDefaultAddresses(Long userId);
 }

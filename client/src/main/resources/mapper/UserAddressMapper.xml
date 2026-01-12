@@ -88,4 +88,8 @@
             #{id}
         </foreach>
     </delete>
+
+    <update id="cancelAllDefaultAddresses" parameterType="Long">
+        update user_address set is_default = 0 where user_id = #{userId}
+    </update>
 </mapper>
