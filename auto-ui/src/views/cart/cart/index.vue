@@ -111,7 +111,8 @@ export default {
       loading: false,
       cartList: [],
       selectedItems: [],
-      selectAll: false
+      selectAll: false,
+      quantityUpdateTimer: null
     }
   },
   computed: {
@@ -124,6 +125,11 @@ export default {
   },
   mounted() {
     this.loadCartList()
+  },
+  beforeDestroy() {
+    if (this.quantityUpdateTimer) {
+      clearTimeout(this.quantityUpdateTimer)
+    }
   },
   methods: {
     getProductImage(item) {
@@ -218,6 +224,20 @@ export default {
       this.saveCartToLocalStorage()
     },
     handleQuantityChange(row) {
+      row.subtotal = row.price * row.quantity
+      const selectedItem = this.selectedItems.find(item => item.cartId === row.cartId)
+      if (selectedItem) {
+        selectedItem.quantity = row.quantity
+        selectedItem.subtotal = row.subtotal
+      }
+      if (this.quantityUpdateTimer) {
+        clearTimeout(this.quantityUpdateTimer)
+      }
+      this.quantityUpdateTimer = setTimeout(() => {
+        this.updateQuantityToServer(row)
+      }, 500)
+    },
+    updateQuantityToServer(row) {
       console.log('更新数量:', row.cartId, row.quantity)
       updateQuantityById({ cartId: row.cartId, quantity: row.quantity }).then(response => {
         if (response.code === 200) {

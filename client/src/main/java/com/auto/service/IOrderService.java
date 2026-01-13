@@ -33,4 +33,8 @@ public interface IOrderService {
     void autoConfirmOrder(Long orderId);
 
     void autoUpdateLogistics(Long orderId);
+
+    int deleteOrder(Long orderId);
+
+    int deleteOrderBatch(Long[] orderIds);
 }

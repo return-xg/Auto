@@ -54,8 +54,19 @@ export function confirmOrder(id) {
 
 export function deleteOrder(id) {
   return request({
-    url: '/order/' + id,
-    method: 'delete'
+    url: '/order/delete',
+    method: 'post',
+    params: {
+      orderId: id
+    }
+  })
+}
+
+export function deleteOrderBatch(ids) {
+  return request({
+    url: '/order/deleteBatch',
+    method: 'post',
+    data: ids
   })
 }
 

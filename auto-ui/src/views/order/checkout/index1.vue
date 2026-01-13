@@ -7,6 +7,46 @@
 
       <div v-if="checkoutData">
         <div class="section">
+          <h3 class="section-title">配送方式</h3>
+          <el-radio-group v-model="deliveryType" @change="handleDeliveryTypeChange">
+            <el-radio :label="1">快递配送</el-radio>
+            <el-radio :label="2">门店安装</el-radio>
+          </el-radio-group>
+          <div v-if="deliveryType === 2" class="store-select">
+            <el-select v-model="storeId" placeholder="请选择门店" style="width: 300px; margin-top: 10px;" @change="handleStoreChange">
+              <el-option
+                v-for="store in storeList"
+                :key="store.id"
+                :label="store.name"
+                :value="store.id"
+              />
+            </el-select>
+            <div style="margin-top: 15px;">
+              <span style="margin-right: 10px;">预约安装时间：</span>
+              <el-date-picker
+                :key="storeId"
+                v-model="appointmentDate"
+                type="datetime"
+                placeholder="请先选择门店"
+                :picker-options="pickerOptions"
+                :disabled="!storeId"
+                value-format="yyyy-MM-dd HH:mm"
+                format="yyyy-MM-dd HH:mm"
+                style="width: 300px;"
+              />
+            </div>
+            <div v-if="!storeId" style="margin-top: 8px; color: #f56c6c; font-size: 12px;">
+              <i class="el-icon-warning"></i>
+              <span style="margin-left: 5px;">请先选择门店，再选择预约时间</span>
+            </div>
+            <div v-if="selectedStore && selectedStore.businessHours" style="margin-top: 10px; color: #909399; font-size: 12px;">
+              <i class="el-icon-time"></i>
+              <span style="margin-left: 5px;">营业时间：{{ selectedStore.businessHours }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="deliveryType === 1" class="section">
           <div class="section-header">
             <h3 class="section-title">收货地址</h3>
             <el-button type="primary" size="small" icon="el-icon-plus" @click="showAddAddressDialog">添加收货地址</el-button>
@@ -39,31 +79,13 @@
         </div>
 
         <div class="section">
-          <h3 class="section-title">配送方式</h3>
-          <el-radio-group v-model="deliveryType" @change="handleDeliveryTypeChange">
-            <el-radio :label="1">快递配送</el-radio>
-            <el-radio :label="2">门店自提</el-radio>
-          </el-radio-group>
-          <div v-if="deliveryType === 2" class="store-select">
-            <el-select v-model="storeId" placeholder="请选择门店" style="width: 300px; margin-top: 10px;">
-              <el-option
-                v-for="store in storeList"
-                :key="store.id"
-                :label="store.name"
-                :value="store.id"
-              />
-            </el-select>
-          </div>
-        </div>
-
-        <div class="section">
           <h3 class="section-title">商品清单</h3>
-          <el-table :data="checkoutData.selectedItems" border stripe>
-            <el-table-column label="商品信息" width="400">
+          <el-table :data="checkoutData.selectedItems" border stripe style="width: 100%">
+            <el-table-column label="商品信息" min-width="400">
               <template slot-scope="scope">
                 <div class="product-info">
                   <el-image
-                    :src="scope.row.productImage || '/static/images/default-product.png'"
+                    :src="getProductImage(scope.row)"
                     fit="cover"
                     style="width: 80px; height: 80px; border-radius: 4px;"
                   >
@@ -85,7 +107,7 @@
             </el-table-column>
             <el-table-column prop="price" label="单价" width="120" :formatter="formatPrice" />
             <el-table-column prop="quantity" label="数量" width="100" />
-            <el-table-column label="小计" width="120">
+            <el-table-column label="小计" min-width="120">
               <template slot-scope="scope">
                 <span class="subtotal">¥{{ (scope.row.price * scope.row.quantity).toFixed(2) }}</span>
               </template>
@@ -129,7 +151,7 @@
           />
         </div>
 
-        <div class="order-summary">
+        <div class="order-summary" v-if="checkoutData">
           <div class="summary-row">
             <span>商品件数：</span>
             <span class="summary-value">{{ checkoutData.selectedCount }} 件</span>
@@ -163,6 +185,7 @@
     </el-card>
 
     <el-dialog
+      v-if="checkoutData"
       title="确认支付"
       :visible.sync="paymentDialogVisible"
       width="500px"
@@ -219,11 +242,20 @@ export default {
       selectedAddressId: null,
       deliveryType: 1,
       storeId: null,
+      selectedStore: null,
+      appointmentDate: '',
       remark: '',
       freight: 0,
       paymentDialogVisible: false,
       addressDialogVisible: false,
       selectedPaymentMethod: '',
+      pickerOptions: {
+        disabledDate(time) {
+          return time.getTime() < Date.now() - 8.64e7
+        },
+        disabledHours: () => [],
+        disabledMinutes: () => []
+      },
       paymentMethods: [
         {
           value: 'wechat',
@@ -242,9 +274,9 @@ export default {
   },
   computed: {
     canSubmit() {
-      return this.selectedAddressId && 
+      const hasDeliveryInfo = this.deliveryType === 1 ? this.selectedAddressId : (this.storeId && this.appointmentDate)
+      return hasDeliveryInfo && 
              this.selectedPaymentMethod &&
-             (this.deliveryType === 1 || this.storeId) &&
              this.checkoutData &&
              this.checkoutData.selectedItems.length > 0
     }
@@ -255,6 +287,21 @@ export default {
     this.loadStoreList()
   },
   methods: {
+    getProductImage(item) {
+      let imageUrl = ''
+      if (item.productImage) {
+        imageUrl = item.productImage
+      }
+
+      if (!imageUrl) {
+        return '/static/images/default-product.png'
+      }
+
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        return imageUrl
+      }
+      return process.env.VUE_APP_BASE_API + imageUrl
+    },
     loadCheckoutData() {
       const checkoutItems = localStorage.getItem('checkoutItems')
       if (checkoutItems) {
@@ -281,12 +328,14 @@ export default {
       })
     },
     loadStoreList() {
-      listStore({}).then(response => {
+      listStore({ status: 1 }).then(response => {
         if (response.code === 200) {
-          this.storeList = response.data || []
+          this.storeList = response.rows || []
+          console.log('门店列表数据:', this.storeList)
         }
       }).catch(error => {
         console.error('获取门店列表失败:', error)
+        this.$message.error('获取门店列表失败')
       })
     },
     selectAddress(addressId) {
@@ -295,10 +344,55 @@ export default {
     handleDeliveryTypeChange(val) {
       if (val === 1) {
         this.storeId = null
+        this.selectedStore = null
+        this.appointmentDate = ''
         this.freight = 10
       } else {
         this.freight = 0
       }
+    },
+    handleStoreChange(storeId) {
+      const store = this.storeList.find(s => s.id === storeId)
+      this.selectedStore = store
+      this.appointmentDate = ''
+      this.updatePickerOptions(store)
+    },
+    updatePickerOptions(store) {
+      if (!store || !store.businessHours) {
+        this.pickerOptions.disabledHours = () => []
+        this.pickerOptions.disabledMinutes = () => []
+        return
+      }
+      
+      const hours = this.parseBusinessHours(store.businessHours)
+      
+      const disabledHours = []
+      for (let i = 0; i < 24; i++) {
+        if (i < hours.start || i >= hours.end) {
+          disabledHours.push(i)
+        }
+      }
+      
+      this.pickerOptions.disabledHours = () => disabledHours
+      this.pickerOptions.disabledMinutes = () => []
+    },
+    parseBusinessHours(businessHours) {
+      if (!businessHours) {
+        return { start: 9, end: 18 }
+      }
+      
+      const parts = businessHours.split('-')
+      if (parts.length !== 2) {
+        return { start: 9, end: 18 }
+      }
+      
+      const startParts = parts[0].trim().split(':')
+      const endParts = parts[1].trim().split(':')
+      
+      const startHour = parseInt(startParts[0]) || 9
+      const endHour = parseInt(endParts[0]) || 18
+      
+      return { start: startHour, end: endHour }
     },
     getPaymentIcon(method) {
       const icons = {
@@ -330,12 +424,16 @@ export default {
       this.selectedPaymentMethod = method
     },
     submitOrder() {
-      if (!this.selectedAddressId) {
+      if (this.deliveryType === 1 && !this.selectedAddressId) {
         this.$message.warning('请选择收货地址')
         return
       }
       if (this.deliveryType === 2 && !this.storeId) {
         this.$message.warning('请选择门店')
+        return
+      }
+      if (this.deliveryType === 2 && !this.appointmentDate) {
+        this.$message.warning('请选择预约安装时间')
         return
       }
       if (!this.selectedPaymentMethod) {
@@ -352,11 +450,16 @@ export default {
       const orderData = {
         userId: userId,
         cartIds: this.checkoutData.selectedItems.map(item => item.cartId),
-        addressId: this.selectedAddressId,
         deliveryType: this.deliveryType,
-        storeId: this.storeId,
         payType: payType,
         remark: this.remark
+      }
+      
+      if (this.deliveryType === 1) {
+        orderData.addressId = this.selectedAddressId
+      } else {
+        orderData.storeId = this.storeId
+        orderData.appointmentDate = this.appointmentDate
       }
       
       this.loading = true

@@ -179,4 +179,36 @@ public class OrderController {
             return AjaxResult.error(e.getMessage());
         }
     }
+
+    /**
+     * 删除订单
+     *
+     * @param orderId 订单ID
+     * @return AjaxResult 包含删除结果的响应对象
+     */
+    @PostMapping("/delete")
+    public AjaxResult deleteOrder(@RequestParam Long orderId) {
+        try {
+            int result = orderService.deleteOrder(orderId);
+            return result > 0 ? AjaxResult.success("删除成功") : AjaxResult.error("删除失败");
+        } catch (Exception e) {
+            return AjaxResult.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 批量删除订单
+     *
+     * @param orderIds 订单ID数组
+     * @return AjaxResult 包含删除结果的响应对象
+     */
+    @PostMapping("/deleteBatch")
+    public AjaxResult deleteOrderBatch(@RequestBody Long[] orderIds) {
+        try {
+            int result = orderService.deleteOrderBatch(orderIds);
+            return result > 0 ? AjaxResult.success("删除成功") : AjaxResult.error("删除失败");
+        } catch (Exception e) {
+            return AjaxResult.error(e.getMessage());
+        }
+    }
 }

@@ -16,9 +16,18 @@
 
       <div v-loading="loading">
         <div v-if="orderList.length > 0">
+          <div class="batch-actions" v-if="selectedOrders.length > 0">
+            <span>已选择 {{ selectedOrders.length }} 个订单</span>
+            <el-button type="danger" size="small" @click="handleBatchDelete">
+              <i class="el-icon-delete"></i> 批量删除
+            </el-button>
+            <el-button size="small" @click="clearSelection">取消选择</el-button>
+          </div>
+
           <div v-for="order in orderList" :key="order.id" class="order-item">
             <div class="order-header">
               <div class="order-info">
+                <el-checkbox v-model="order.selected" @change="handleSelectChange"></el-checkbox>
                 <span class="order-no">订单号：{{ order.orderNo }}</span>
                 <span class="order-time">{{ order.createTime }}</span>
               </div>
@@ -30,18 +39,30 @@
             <div class="order-content">
               <div class="product-list">
                 <div v-for="item in order.products" :key="item.id" class="product-item">
-                  <el-image
-                    :src="item.productImage || '/static/images/default-product.png'"
-                    fit="cover"
-                    style="width: 80px; height: 80px; border-radius: 4px;"
-                  >
-                    <div slot="error" class="image-error">
-                      <i class="el-icon-picture-outline"></i>
-                    </div>
-                  </el-image>
+                  <div class="product-image-wrapper">
+                    <el-image
+                      :src="getImageUrl(item.productImage)"
+                      fit="cover"
+                      :preview-src-list="[getImageUrl(item.productImage)]"
+                      class="product-image"
+                    >
+                      <div slot="error" class="image-error">
+                        <i class="el-icon-picture-outline"></i>
+                        <span>暂无图片</span>
+                      </div>
+                      <div slot="placeholder" class="image-placeholder">
+                        <i class="el-icon-loading"></i>
+                      </div>
+                    </el-image>
+                  </div>
                   <div class="product-detail">
                     <div class="product-name">{{ item.productName }}</div>
-                    <div class="product-spec">{{ item.productSpec || '默认规格' }}</div>
+                    <div class="product-spec">
+                      <span v-if="item.productSpec" class="spec-tag" v-for="(value, key) in parseProductSpec(item.productSpec)" :key="key">
+                        {{ key }}：{{ value }}
+                      </span>
+                      <span v-else class="spec-default">默认规格</span>
+                    </div>
                     <div class="product-price">
                       <span class="price">¥{{ Number(item.price).toFixed(2) }}</span>
                       <span class="quantity">x{{ item.quantity }}</span>
@@ -118,6 +139,14 @@
                 >
                   申请退款
                 </el-button>
+                <el-button
+                  type="danger"
+                  size="small"
+                  plain
+                  @click="handleDelete(order)"
+                >
+                  删除
+                </el-button>
               </div>
             </div>
           </div>
@@ -174,7 +203,7 @@
 </template>
 
 <script>
-import { listOrder, cancelOrder, confirmOrder } from '@/api/order/order'
+import { listOrder, cancelOrder, confirmOrder, deleteOrder, deleteOrderBatch } from '@/api/order/order'
 import OrderDetailDialog from './OrderDetailDialog.vue'
 import LogisticsDialog from './LogisticsDialog.vue'
 import RefundDialog from './RefundDialog.vue'
@@ -205,10 +234,33 @@ export default {
       currentOrder: {}
     }
   },
+  computed: {
+    selectedOrders() {
+      return this.orderList.filter(order => order.selected)
+    }
+  },
   mounted() {
     this.loadOrderList()
   },
   methods: {
+    getImageUrl(imageUrl) {
+      if (!imageUrl) return '/static/images/default-product.png'
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        return imageUrl
+      }
+      return process.env.VUE_APP_BASE_API + imageUrl
+    },
+    parseProductSpec(specStr) {
+      if (!specStr) return {}
+      try {
+        if (typeof specStr === 'string') {
+          return JSON.parse(specStr)
+        }
+        return specStr
+      } catch (e) {
+        return {}
+      }
+    },
     loadOrderList() {
       this.loading = true
       const userId = this.$store.getters.id
@@ -334,6 +386,57 @@ export default {
     },
     goToShop() {
       this.$router.push('/product/userIndex')
+    },
+    handleSelectChange() {
+    },
+    clearSelection() {
+      this.orderList.forEach(order => {
+        order.selected = false
+      })
+    },
+    handleDelete(order) {
+      this.$confirm('确定要删除该订单吗？删除后无法恢复。', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        return deleteOrder(order.id)
+      }).then(response => {
+        if (response.code === 200) {
+          this.$message.success('删除成功')
+          this.loadOrderList()
+        } else {
+          this.$message.error(response.msg || '删除失败')
+        }
+      }).catch(error => {
+        if (error !== 'cancel') {
+          this.$message.error('删除失败')
+        }
+      })
+    },
+    handleBatchDelete() {
+      const selectedCount = this.selectedOrders.length
+      const orderIds = this.selectedOrders.map(order => order.id)
+      
+      this.$confirm(`确定要删除选中的 ${selectedCount} 个订单吗？删除后无法恢复。`, '批量删除', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        return deleteOrderBatch(orderIds)
+      }).then(response => {
+        if (response.code === 200) {
+          this.$message.success(`成功删除 ${selectedCount} 个订单`)
+          this.clearSelection()
+          this.loadOrderList()
+        } else {
+          this.$message.error(response.msg || '批量删除失败')
+        }
+      }).catch(error => {
+        if (error !== 'cancel') {
+          this.$message.error('批量删除失败')
+        }
+      })
     }
   }
 }
@@ -349,6 +452,23 @@ export default {
 .card-header {
   font-weight: bold;
   font-size: 16px;
+}
+
+.batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 20px;
+  background-color: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 4px;
+  margin-bottom: 20px;
+
+  span {
+    font-size: 14px;
+    color: #fa8c16;
+    font-weight: bold;
+  }
 }
 
 .order-item {
@@ -369,6 +489,7 @@ export default {
 
   .order-info {
     display: flex;
+    align-items: center;
     gap: 20px;
     font-size: 14px;
     color: #606266;
@@ -401,14 +522,49 @@ export default {
         border-bottom: none;
       }
 
+      .product-image-wrapper {
+        flex-shrink: 0;
+
+        .product-image {
+          width: 80px;
+          height: 80px;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: transform 0.3s;
+
+          &:hover {
+            transform: scale(1.05);
+          }
+        }
+      }
+
       .image-error {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        background-color: #f5f7fa;
+        color: #909399;
+        font-size: 12px;
+
+        i {
+          font-size: 24px;
+          margin-bottom: 5px;
+        }
+
+        span {
+          font-size: 12px;
+        }
+      }
+
+      .image-placeholder {
         display: flex;
         align-items: center;
         justify-content: center;
         height: 100%;
         background-color: #f5f7fa;
         color: #909399;
-        font-size: 32px;
       }
 
       .product-detail {
@@ -419,12 +575,30 @@ export default {
           font-weight: bold;
           color: #303133;
           margin-bottom: 5px;
+          line-height: 1.4;
         }
 
         .product-spec {
           font-size: 12px;
           color: #909399;
           margin-bottom: 8px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+
+          .spec-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: #f0f2f5;
+            color: #606266;
+            border-radius: 3px;
+            font-size: 12px;
+            line-height: 1.5;
+          }
+
+          .spec-default {
+            color: #909399;
+          }
         }
 
         .product-price {

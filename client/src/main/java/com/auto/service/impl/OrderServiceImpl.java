@@ -85,12 +85,14 @@ public class OrderServiceImpl implements IOrderService {
             throw new IllegalArgumentException("请选择要购买的商品");
         }
 
-        if (createOrderDTO.getAddressId() == null) {
-            throw new IllegalArgumentException("请选择收货地址");
-        }
-
         if (createOrderDTO.getDeliveryType() == null) {
             throw new IllegalArgumentException("请选择配送方式");
+        }
+
+        if (createOrderDTO.getDeliveryType().equals(DELIVERY_TYPE_HOME)) {
+            if (createOrderDTO.getAddressId() == null) {
+                throw new IllegalArgumentException("请选择收货地址");
+            }
         }
 
         if (createOrderDTO.getDeliveryType().equals(DELIVERY_TYPE_STORE) && createOrderDTO.getStoreId() == null) {
@@ -101,13 +103,15 @@ public class OrderServiceImpl implements IOrderService {
             throw new IllegalArgumentException("请选择支付方式");
         }
 
-        UserAddress address = userAddressMapper.selectUserAddressById(createOrderDTO.getAddressId());
-        if (address == null) {
-            throw new IllegalArgumentException("收货地址不存在");
-        }
+        if (createOrderDTO.getDeliveryType().equals(DELIVERY_TYPE_HOME)) {
+            UserAddress address = userAddressMapper.selectUserAddressById(createOrderDTO.getAddressId());
+            if (address == null) {
+                throw new IllegalArgumentException("收货地址不存在");
+            }
 
-        if (!address.getUserId().equals(createOrderDTO.getUserId())) {
-            throw new IllegalArgumentException("收货地址不属于当前用户");
+            if (!address.getUserId().equals(createOrderDTO.getUserId())) {
+                throw new IllegalArgumentException("收货地址不属于当前用户");
+            }
         }
 
         List<Cart> cartItems = cartMapper.selectCartByIds(createOrderDTO.getCartIds());
@@ -150,7 +154,7 @@ public class OrderServiceImpl implements IOrderService {
             productMapper.updateProduct(product);
         }
 
-        BigDecimal freightPrice = FREIGHT_PRICE;
+        BigDecimal freightPrice = createOrderDTO.getDeliveryType().equals(DELIVERY_TYPE_STORE) ? BigDecimal.ZERO : FREIGHT_PRICE;
         BigDecimal payPrice = totalPrice.add(freightPrice);
 
         Order order = new Order();
@@ -162,7 +166,9 @@ public class OrderServiceImpl implements IOrderService {
         order.setPayType(createOrderDTO.getPayType());
         order.setStatus(ORDER_STATUS_PENDING_PAYMENT);
         order.setDeliveryType(createOrderDTO.getDeliveryType());
-        order.setAddressId(createOrderDTO.getAddressId());
+        if (createOrderDTO.getDeliveryType().equals(DELIVERY_TYPE_HOME)) {
+            order.setAddressId(createOrderDTO.getAddressId());
+        }
         order.setStoreId(createOrderDTO.getStoreId());
         order.setCreateTime(DateUtils.getNowDate());
         order.setUpdateTime(DateUtils.getNowDate());
@@ -177,6 +183,15 @@ public class OrderServiceImpl implements IOrderService {
         }
 
         if (createOrderDTO.getDeliveryType().equals(DELIVERY_TYPE_STORE) && createOrderDTO.getStoreId() != null) {
+            Store store = storeMapper.selectStoreById(createOrderDTO.getStoreId());
+            if (store == null) {
+                throw new IllegalArgumentException("门店不存在");
+            }
+            
+            if (store.getStatus() == null || store.getStatus() != 1) {
+                throw new IllegalArgumentException("门店已停业，无法预约");
+            }
+            
             Appointment appointment = new Appointment();
             appointment.setOrderId(order.getId());
             appointment.setStoreId(createOrderDTO.getStoreId());
@@ -184,6 +199,39 @@ public class OrderServiceImpl implements IOrderService {
             appointment.setStatus(0L);
             appointment.setCreateTime(DateUtils.getNowDate());
             appointment.setUpdateTime(DateUtils.getNowDate());
+            
+            Date appointmentTime = null;
+            if (createOrderDTO.getAppointmentDate() != null && !createOrderDTO.getAppointmentDate().isEmpty()) {
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+                    appointmentTime = sdf.parse(createOrderDTO.getAppointmentDate());
+                    
+                    if (!isWithinBusinessHours(appointmentTime, store.getBusinessHours())) {
+                        throw new IllegalArgumentException("预约时间不在门店营业时间内，请选择营业时间内的时段");
+                    }
+                    
+                    appointment.setAppointmentTime(appointmentTime);
+                } catch (IllegalArgumentException e) {
+                    throw e;
+                } catch (Exception e) {
+                    Calendar cal = Calendar.getInstance();
+                    cal.add(Calendar.DAY_OF_MONTH, 1);
+                    cal.set(Calendar.HOUR_OF_DAY, 9);
+                    cal.set(Calendar.MINUTE, 0);
+                    cal.set(Calendar.SECOND, 0);
+                    appointmentTime = cal.getTime();
+                    appointment.setAppointmentTime(appointmentTime);
+                }
+            } else {
+                Calendar cal = Calendar.getInstance();
+                cal.add(Calendar.DAY_OF_MONTH, 1);
+                cal.set(Calendar.HOUR_OF_DAY, 9);
+                cal.set(Calendar.MINUTE, 0);
+                cal.set(Calendar.SECOND, 0);
+                appointmentTime = cal.getTime();
+                appointment.setAppointmentTime(appointmentTime);
+            }
+            
             appointmentMapper.insertAppointment(appointment);
             order.setAppointmentId(appointment.getId());
             orderMapper.updateOrder(order);
@@ -570,6 +618,33 @@ public class OrderServiceImpl implements IOrderService {
         return orderVO;
     }
 
+    private boolean isWithinBusinessHours(Date appointmentTime, String businessHours) {
+        if (businessHours == null || businessHours.isEmpty()) {
+            return true;
+        }
+
+        String[] parts = businessHours.split("-");
+        if (parts.length != 2) {
+            return true;
+        }
+
+        try {
+            String[] startParts = parts[0].trim().split(":");
+            String[] endParts = parts[1].trim().split(":");
+
+            int startHour = Integer.parseInt(startParts[0]);
+            int endHour = Integer.parseInt(endParts[0]);
+
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(appointmentTime);
+            int appointmentHour = cal.get(Calendar.HOUR_OF_DAY);
+
+            return appointmentHour >= startHour && appointmentHour < endHour;
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
     private String getStatusText(Long status) {
         if (status == null) {
             return "未知";
@@ -602,5 +677,46 @@ public class OrderServiceImpl implements IOrderService {
             default:
                 return "未知";
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteOrder(Long orderId) {
+        if (orderId == null) {
+            throw new IllegalArgumentException("订单ID不能为空");
+        }
+
+        Order order = orderMapper.selectOrderById(orderId);
+        if (order == null) {
+            throw new RuntimeException("订单不存在");
+        }
+
+        if (!order.getStatus().equals(ORDER_STATUS_CANCELLED) && !order.getStatus().equals(ORDER_STATUS_COMPLETED)) {
+            throw new RuntimeException("只能删除已取消或已完成的订单");
+        }
+
+        orderProductMapper.deleteOrderProductByOrderId(orderId);
+        int result = orderMapper.deleteOrderById(orderId);
+
+        return result;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteOrderBatch(Long[] orderIds) {
+        if (orderIds == null || orderIds.length == 0) {
+            throw new IllegalArgumentException("订单ID数组不能为空");
+        }
+
+        int count = 0;
+        for (Long orderId : orderIds) {
+            try {
+                count += deleteOrder(orderId);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return count;
     }
 }

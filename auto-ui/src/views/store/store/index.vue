@@ -173,8 +173,16 @@
         <el-form-item label="联系电话" prop="phone">
           <el-input v-model="form.phone" placeholder="请输入联系电话" />
         </el-form-item>
-        <el-form-item label="营业时间" prop="businessHours">
-          <el-input v-model="form.businessHours" placeholder="请输入营业时间" />
+        <el-form-item label="营业时间" prop="businessHours" required>
+          <el-time-picker
+            v-model="form.businessHours"
+            is-range
+            range-separator="至"
+            start-placeholder="开始时间"
+            end-placeholder="结束时间"
+            value-format="HH:mm"
+            format="HH:mm"
+          />
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
@@ -238,6 +246,21 @@ export default {
         phone: [
           { required: true, message: '联系电话不能为空', trigger: 'blur' },
           { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
+        ],
+        businessHours: [
+          { 
+            type: 'array',
+            required: true, 
+            message: '请选择营业时间', 
+            trigger: 'change',
+            validator: (rule, value, callback) => {
+              if (!value || value.length === 0 || !value[0] || !value[1]) {
+                callback(new Error('请选择营业时间'))
+              } else {
+                callback()
+              }
+            }
+          }
         ],
         status: [
           { required: true, message: '状态不能为空', trigger: 'blur' }
@@ -312,6 +335,12 @@ export default {
             this.loadDistricts(this.form.province, this.form.city)
           }
         }
+        if (this.form.businessHours && typeof this.form.businessHours === 'string') {
+          const hours = this.form.businessHours.split('-')
+          if (hours.length === 2) {
+            this.form.businessHours = hours
+          }
+        }
       }).catch(error => {
         this.$message.error('获取门店详情失败：' + error.message)
       })
@@ -319,8 +348,12 @@ export default {
     submitForm() {
       this.$refs.formRef.validate(valid => {
         if (valid) {
+          const formData = { ...this.form }
+          if (formData.businessHours && Array.isArray(formData.businessHours)) {
+            formData.businessHours = formData.businessHours.join('-')
+          }
           if (this.form.id != null) {
-            updateStore(this.form).then(response => {
+            updateStore(formData).then(response => {
               this.$message.success('修改成功')
               this.open = false
               this.getList()
@@ -328,7 +361,7 @@ export default {
               this.$message.error('修改失败：' + error.message)
             })
           } else {
-            addStore(this.form).then(response => {
+            addStore(formData).then(response => {
               this.$message.success('新增成功')
               this.open = false
               this.getList()
@@ -348,7 +381,7 @@ export default {
         district: null,
         address: null,
         phone: null,
-        businessHours: null,
+        businessHours: [],
         status: 1
       }
       this.cities = []
