@@ -4,7 +4,7 @@ import java.util.List;
 
 public class CreateOrderDTO {
     private Long userId;
-    private List<Long> productIds;
+    private List<Long> cartIds;
     private Long addressId;
     private Integer deliveryType;
     private Long storeId;
@@ -20,12 +20,12 @@ public class CreateOrderDTO {
         this.userId = userId;
     }
 
-    public List<Long> getProductIds() {
-        return productIds;
+    public List<Long> getCartIds() {
+        return cartIds;
     }
 
-    public void setProductIds(List<Long> productIds) {
-        this.productIds = productIds;
+    public void setCartIds(List<Long> cartIds) {
+        this.cartIds = cartIds;
     }
 
     public Long getAddressId() {

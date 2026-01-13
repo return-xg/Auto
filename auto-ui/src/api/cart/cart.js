@@ -24,9 +24,25 @@ export function updateQuantity(data) {
   })
 }
 
+export function updateQuantityById(data) {
+  return request({
+    url: '/cart/update/quantity/byId',
+    method: 'put',
+    params: data
+  })
+}
+
 export function deleteProduct(data) {
   return request({
     url: '/cart/delete',
+    method: 'delete',
+    params: data
+  })
+}
+
+export function deleteProductById(data) {
+  return request({
+    url: '/cart/delete/byId',
     method: 'delete',
     params: data
   })
@@ -41,6 +57,15 @@ export function deleteProducts(data) {
   })
 }
 
+export function deleteSelectedProducts(data) {
+  return request({
+    url: '/cart/delete/selected',
+    method: 'delete',
+    params: { userId: data.userId },
+    data: data.cartIds
+  })
+}
+
 export function clearCart(data) {
   return request({
     url: '/cart/clear',
@@ -52,6 +77,14 @@ export function clearCart(data) {
 export function updateSelected(data) {
   return request({
     url: '/cart/update/selected',
+    method: 'put',
+    params: data
+  })
+}
+
+export function updateSelectedById(data) {
+  return request({
+    url: '/cart/update/selected/byId',
     method: 'put',
     params: data
   })

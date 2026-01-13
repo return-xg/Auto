@@ -400,10 +400,12 @@ export default {
     handleAddToCartFromDetail(product) {
       const userId = this.$store.getters.id
       const quantity = product.quantity || 1
+      const spec = product.specText || null
       addToCart({
         userId,
         productId: product.id,
-        quantity
+        quantity,
+        spec
       }).then(response => {
         if (response.code === 200) {
           this.$message.success(`已添加${quantity}件商品到购物车`)

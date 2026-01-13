@@ -251,11 +251,11 @@ export default {
       }
     },
     getSelectedSpecText() {
-      const specs = []
+      const specs = {}
       for (const [key, value] of Object.entries(this.selectedSpecs)) {
-        specs.push(`${key}:${value}`)
+        specs[key] = value
       }
-      return specs.join(' ')
+      return Object.keys(specs).length > 0 ? JSON.stringify(specs) : null
     },
     handleAddToCart() {
       if (this.parsedSpecList.length > 0 && Object.keys(this.selectedSpecs).length === 0) {

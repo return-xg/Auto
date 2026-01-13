@@ -34,6 +34,9 @@ public class CartItemVO {
     /** 是否选中 */
     private Integer selected;
 
+    /** 规格参数（JSON格式） */
+    private String spec;
+
     /** 创建时间 */
     private Date createTime;
 
@@ -114,6 +117,14 @@ public class CartItemVO {
 
     public void setSelected(Integer selected) {
         this.selected = selected;
+    }
+
+    public String getSpec() {
+        return spec;
+    }
+
+    public void setSpec(String spec) {
+        this.spec = spec;
     }
 
     public Date getCreateTime() {

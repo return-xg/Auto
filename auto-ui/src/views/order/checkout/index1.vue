@@ -73,7 +73,12 @@
                   </el-image>
                   <div class="product-detail">
                     <div class="product-name" :title="scope.row.productName">{{ scope.row.productName }}</div>
-                    <div class="product-spec">数量: {{ scope.row.quantity }}</div>
+                    <div class="product-spec" v-if="scope.row.spec">
+                      <span v-for="(value, key) in parseSpec(scope.row.spec)" :key="key" class="spec-item">
+                        {{ key }}: {{ value }}
+                      </span>
+                    </div>
+                    <div class="product-spec" v-else>数量: {{ scope.row.quantity }}</div>
                   </div>
                 </div>
               </template>
@@ -312,6 +317,15 @@ export default {
     formatPrice(row, column) {
       return '¥' + Number(row[column.property]).toFixed(2)
     },
+    parseSpec(spec) {
+      if (!spec) return {}
+      try {
+        return JSON.parse(spec)
+      } catch (e) {
+        console.error('解析规格参数失败:', e)
+        return {}
+      }
+    },
     selectPaymentMethod(method) {
       this.selectedPaymentMethod = method
     },
@@ -337,7 +351,7 @@ export default {
       
       const orderData = {
         userId: userId,
-        productIds: this.checkoutData.selectedItems.map(item => item.productId),
+        cartIds: this.checkoutData.selectedItems.map(item => item.cartId),
         addressId: this.selectedAddressId,
         deliveryType: this.deliveryType,
         storeId: this.storeId,
@@ -549,6 +563,16 @@ export default {
     .product-spec {
       font-size: 12px;
       color: #909399;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      .spec-item {
+        background-color: #f0f2f5;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+      }
     }
   }
 }

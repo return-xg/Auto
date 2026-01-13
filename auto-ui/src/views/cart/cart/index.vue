@@ -13,16 +13,18 @@
             :data="cartList"
             border
             stripe
+            style="width: 100%"
             @selection-change="handleSelectionChange"
           >
-            <el-table-column type="selection" width="55" />
-            <el-table-column label="商品信息" width="400">
+            <el-table-column type="selection" width="60" align="center" />
+            <el-table-column label="商品信息" min-width="350">
               <template slot-scope="scope">
                 <div class="product-info">
                   <el-image
-                    :src="scope.row.productImage || '/static/images/default-product.png'"
+                    :src="getProductImage(scope.row)"
                     fit="cover"
-                    style="width: 80px; height: 80px; border-radius: 4px;"
+                    style="width: 90px; height: 90px; border-radius: 4px;"
+                    :preview-src-list="[getProductImage(scope.row)]"
                   >
                     <div slot="error" class="image-error">
                       <i class="el-icon-picture-outline"></i>
@@ -30,13 +32,19 @@
                   </el-image>
                   <div class="product-detail">
                     <div class="product-name" :title="scope.row.productName">{{ scope.row.productName }}</div>
-                    <div class="product-spec">数量: {{ scope.row.quantity }}</div>
+                    <div class="product-spec" v-if="scope.row.spec && parseSpec(scope.row.spec)">
+                      <span v-for="(value, key) in parseSpec(scope.row.spec)" :key="key" class="spec-item">
+                        {{ key }}: {{ value }}
+                      </span>
+                    </div>
+                    <div class="product-spec" v-else-if="!scope.row.spec">默认规格</div>
+                    <div class="product-spec" v-else>数量: {{ scope.row.quantity }}</div>
                   </div>
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="price" label="单价" width="120" :formatter="formatPrice" />
-            <el-table-column label="数量" width="200">
+            <el-table-column prop="price" label="单价" width="130" align="center" :formatter="formatPrice" />
+            <el-table-column label="数量" width="180" align="center">
               <template slot-scope="scope">
                 <el-input-number
                   v-model.number="scope.row.quantity"
@@ -48,12 +56,12 @@
                 />
               </template>
             </el-table-column>
-            <el-table-column label="小计" width="120">
+            <el-table-column label="小计" width="130" align="center">
               <template slot-scope="scope">
                 <span class="subtotal">¥{{ Number(scope.row.subtotal).toFixed(2) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="120">
+            <el-table-column label="操作" width="100" align="center">
               <template slot-scope="scope">
                 <el-button type="danger" size="small" @click="handleDelete(scope.row)">
                   <i class="el-icon-delete"></i> 删除
@@ -65,6 +73,9 @@
           <div class="cart-footer">
             <div class="footer-left">
               <el-checkbox v-model="selectAll" @change="handleSelectAll">全选</el-checkbox>
+              <el-button type="text" @click="handleDeleteSelected" :disabled="selectedItems.length === 0" style="margin-left: 20px;">
+                <i class="el-icon-delete"></i> 删除已选
+              </el-button>
               <el-button type="text" @click="handleClearCart" style="margin-left: 20px;">
                 <i class="el-icon-delete"></i> 清空购物车
               </el-button>
@@ -91,7 +102,7 @@
 </template>
 
 <script>
-import { listCart, updateQuantity, deleteProduct, clearCart, updateSelected, updateAllSelected } from '@/api/cart/cart'
+import { listCart, updateQuantity, updateQuantityById, deleteProduct, deleteProductById, deleteSelectedProducts, updateSelectedById, clearCart, updateAllSelected } from '@/api/cart/cart'
 
 export default {
   name: 'CartIndex',
@@ -115,6 +126,48 @@ export default {
     this.loadCartList()
   },
   methods: {
+    getProductImage(item) {
+      let imageUrl = ''
+      if (item.productImage) {
+        imageUrl = item.productImage
+      }
+
+      if (!imageUrl) {
+        return '/static/images/default-product.png'
+      }
+
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        return imageUrl
+      }
+      return process.env.VUE_APP_BASE_API + imageUrl
+    },
+    parseSpec(spec) {
+      console.log('原始规格参数:', spec)
+      if (!spec) return null
+      
+      try {
+        const parsed = JSON.parse(spec)
+        console.log('JSON解析结果:', parsed)
+        if (Object.keys(parsed).length === 0) return null
+        return parsed
+      } catch (e) {
+        console.log('JSON解析失败，尝试解析字符串格式')
+        try {
+          if (spec.includes(':')) {
+            const parts = spec.split(':')
+            if (parts.length === 2) {
+              const result = {}
+              result[parts[0].trim()] = parts[1].trim()
+              console.log('字符串解析结果:', result)
+              return result
+            }
+          }
+        } catch (e2) {
+          console.error('字符串解析也失败:', e2)
+        }
+        return null
+      }
+    },
     loadCartList() {
       this.loading = true
       const userId = this.$store.getters.id
@@ -122,9 +175,12 @@ export default {
         this.loading = false
         if (response.code === 200) {
           const cartData = response.data || {}
+          console.log('购物车数据:', cartData)
           this.cartList = cartData.cartItems || []
+          console.log('购物车列表:', this.cartList)
           this.selectedItems = this.cartList.filter(item => item.selected === 1)
           this.selectAll = cartData.isAllSelected || false
+          this.isSelectAllAction = true
           this.$nextTick(() => {
             this.$refs.table?.clearSelection()
             this.cartList.forEach(row => {
@@ -133,17 +189,21 @@ export default {
               }
             })
           })
+          this.$nextTick(() => {
+            this.isSelectAllAction = false
+          })
           this.saveCartToLocalStorage()
         }
       }).catch(error => {
         this.loading = false
+        console.error('获取购物车失败:', error)
         this.$message.error('获取购物车失败')
       })
     },
     handleSelectionChange(selection) {
       this.selectedItems = selection
       this.selectAll = this.cartList.length > 0 && selection.length === this.cartList.length
-      this.updateSelectedStatus()
+      this.saveCartToLocalStorage()
     },
     handleSelectAll(val) {
       this.$refs.table?.clearSelection()
@@ -155,32 +215,11 @@ export default {
       } else {
         this.selectedItems = []
       }
-      const userId = this.$store.getters.id
-      updateAllSelected({ userId, selected: val ? 1 : 0 }).then(response => {
-        if (response.code === 200) {
-          this.updateSelectedStatus()
-        }
-      }).catch(error => {
-        console.error('全选/取消全选失败:', error)
-      })
-    },
-    updateSelectedStatus() {
-      const userId = this.$store.getters.id
-      const selectedIds = this.selectedItems.map(item => item.cartId)
-      this.cartList.forEach(item => {
-        const isSelected = selectedIds.includes(item.cartId)
-        if ((item.selected === 1) !== isSelected) {
-          item.selected = isSelected ? 1 : 0
-          updateSelected({ userId, productId: item.productId, selected: item.selected }).catch(error => {
-            console.error('更新选中状态失败:', error)
-          })
-        }
-      })
       this.saveCartToLocalStorage()
     },
     handleQuantityChange(row) {
-      const userId = this.$store.getters.id
-      updateQuantity({ userId, productId: row.productId, quantity: row.quantity }).then(response => {
+      console.log('更新数量:', row.cartId, row.quantity)
+      updateQuantityById({ cartId: row.cartId, quantity: row.quantity }).then(response => {
         if (response.code === 200) {
           this.$message.success('数量已更新')
           const selectedItem = this.selectedItems.find(item => item.cartId === row.cartId)
@@ -193,6 +232,7 @@ export default {
           this.loadCartList()
         }
       }).catch(error => {
+        console.error('更新数量失败:', error)
         this.$message.error('更新失败')
         this.loadCartList()
       })
@@ -203,8 +243,33 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
+        return deleteProductById({ cartId: row.cartId })
+      }).then(response => {
+        if (response.code === 200) {
+          this.$message.success('删除成功')
+          this.loadCartList()
+        } else {
+          this.$message.error(response.msg || '删除失败')
+        }
+      }).catch(error => {
+        if (error !== 'cancel') {
+          this.$message.error('删除失败')
+        }
+      })
+    },
+    handleDeleteSelected() {
+      if (this.selectedItems.length === 0) {
+        this.$message.warning('请先选择要删除的商品')
+        return
+      }
+      this.$confirm(`确定要删除选中的 ${this.selectedItems.length} 件商品吗？`, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
         const userId = this.$store.getters.id
-        return deleteProduct({ userId, productId: row.productId })
+        const cartIds = this.selectedItems.map(item => item.cartId)
+        return deleteSelectedProducts({ userId, cartIds })
       }).then(response => {
         if (response.code === 200) {
           this.$message.success('删除成功')
@@ -291,8 +356,9 @@ export default {
 
 .product-info {
   display: flex;
-  gap: 15px;
+  gap: 20px;
   align-items: center;
+  padding: 8px 0;
 
   .image-error {
     display: flex;
@@ -301,25 +367,37 @@ export default {
     height: 100%;
     background-color: #f5f7fa;
     color: #909399;
-    font-size: 32px;
+    font-size: 36px;
   }
 
   .product-detail {
     flex: 1;
+    min-width: 0;
 
     .product-name {
       font-size: 14px;
       font-weight: bold;
       color: #303133;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      line-height: 1.4;
     }
 
     .product-spec {
       font-size: 12px;
       color: #909399;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      .spec-item {
+        background-color: #f0f2f5;
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+      }
     }
   }
 }

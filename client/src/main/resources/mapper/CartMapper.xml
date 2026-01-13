@@ -10,12 +10,13 @@
         <result property="productId" column="product_id"/>
         <result property="quantity" column="quantity"/>
         <result property="selected" column="selected"/>
+        <result property="spec" column="spec"/>
         <result property="createTime" column="create_time"/>
         <result property="updateTime" column="update_time"/>
     </resultMap>
 
     <sql id="selectCartVo">
-        select id, user_id, product_id, quantity, selected, create_time, update_time from cart
+        select id, user_id, product_id, quantity, selected, spec, create_time, update_time from cart
     </sql>
 
     <select id="selectCartListByUserId" parameterType="Long" resultMap="CartResult">
@@ -29,6 +30,18 @@
         where user_id = #{userId} and product_id = #{productId}
     </select>
 
+    <select id="selectCartByUserIdAndProductIdAndSpec" resultMap="CartResult">
+        <include refid="selectCartVo"/>
+        where user_id = #{userId} and product_id = #{productId}
+        <if test="spec != null and spec != ''">
+            and spec = #{spec}
+        </if>
+        <if test="spec == null or spec == ''">
+            and (spec is null or spec = '')
+        </if>
+        limit 1
+    </select>
+
     <insert id="insertCart" parameterType="Cart" useGeneratedKeys="true" keyProperty="id">
         insert into cart
         <trim prefix="(" suffix=")" suffixOverrides=",">
@@ -36,6 +49,7 @@
             <if test="productId != null">product_id,</if>
             <if test="quantity != null">quantity,</if>
             <if test="selected != null">selected,</if>
+            <if test="spec != null">spec,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
         </trim>
@@ -44,6 +58,7 @@
             <if test="productId != null">#{productId},</if>
             <if test="quantity != null">#{quantity},</if>
             <if test="selected != null">#{selected},</if>
+            <if test="spec != null">#{spec},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
         </trim>
@@ -54,9 +69,19 @@
         where user_id = #{userId} and product_id = #{productId}
     </update>
 
+    <update id="updateCartQuantityById">
+        update cart set quantity = #{quantity}, update_time = now()
+        where id = #{cartId}
+    </update>
+
     <update id="updateCartSelected">
         update cart set selected = #{selected}, update_time = now()
         where user_id = #{userId} and product_id = #{productId}
+    </update>
+
+    <update id="updateCartSelectedById">
+        update cart set selected = #{selected}, update_time = now()
+        where id = #{cartId}
     </update>
 
     <update id="updateAllCartSelected">
@@ -68,15 +93,27 @@
         delete from cart where user_id = #{userId} and product_id = #{productId}
     </delete>
 
+    <delete id="deleteCartById">
+        delete from cart where id = #{cartId}
+    </delete>
+
     <delete id="deleteCartBatch">
-        delete from cart where user_id = #{userId} and product_id in
-        <foreach item="productId" collection="productIds" open="(" separator="," close=")">
-            #{productId}
+        delete from cart where user_id = #{userId} and id in
+        <foreach item="cartId" collection="cartIds" open="(" separator="," close=")">
+            #{cartId}
         </foreach>
     </delete>
 
     <delete id="clearCart" parameterType="Long">
         delete from cart where user_id = #{userId}
     </delete>
+
+    <select id="selectCartByIds" resultMap="CartResult">
+        <include refid="selectCartVo"/>
+        where id in
+        <foreach item="cartId" collection="cartIds" open="(" separator="," close=")">
+            #{cartId}
+        </foreach>
+    </select>
 
 </mapper>

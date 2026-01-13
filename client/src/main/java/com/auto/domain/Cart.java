@@ -34,6 +34,10 @@ public class Cart extends BaseEntity
     @Excel(name = "是否选中", readConverterExp = "0=否，1是")
     private Integer selected;
 
+    /** 规格参数（JSON格式） */
+    @Excel(name = "规格参数", readConverterExp = "J=SON格式")
+    private String spec;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -84,6 +88,16 @@ public class Cart extends BaseEntity
         return selected;
     }
 
+    public void setSpec(String spec)
+    {
+        this.spec = spec;
+    }
+
+    public String getSpec()
+    {
+        return spec;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -92,6 +106,7 @@ public class Cart extends BaseEntity
                 .append("productId", getProductId())
                 .append("quantity", getQuantity())
                 .append("selected", getSelected())
+                .append("spec", getSpec())
                 .append("createTime", getCreateTime())
                 .append("updateTime", getUpdateTime())
                 .toString();

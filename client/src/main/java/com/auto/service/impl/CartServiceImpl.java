@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -44,6 +45,20 @@ public class CartServiceImpl implements ICartService {
      */
     @Override
     public Cart addProductToCart(Long userId, Long productId, Long quantity) {
+        return addProductToCart(userId, productId, quantity, null);
+    }
+
+    /**
+     * 添加商品到购物车（带规格参数）
+     *
+     * @param userId    用户ID
+     * @param productId 商品ID
+     * @param quantity  商品数量
+     * @param spec      规格参数（JSON格式）
+     * @return 购物车项
+     */
+    @Override
+    public Cart addProductToCart(Long userId, Long productId, Long quantity, String spec) {
         // 参数验证
         if (userId == null || productId == null || quantity == null) {
             throw new IllegalArgumentException("参数不能为空");
@@ -68,11 +83,11 @@ public class CartServiceImpl implements ICartService {
         // 检查数量限制
         quantity = validateQuantity(quantity, product.getStock());
 
-        // 查询购物车中是否已存在该商品
-        Cart existingCartItem = cartMapper.selectCartByUserIdAndProductId(userId, productId);
+        // 查询购物车中是否已存在该商品（相同商品和规格）
+        Cart existingCartItem = cartMapper.selectCartByUserIdAndProductIdAndSpec(userId, productId, spec);
 
         if (existingCartItem != null) {
-            // 已存在，更新数量
+            // 已存在相同规格，更新数量
             Long newQuantity = existingCartItem.getQuantity() + quantity;
             // 检查新数量是否超过库存
             newQuantity = Math.min(newQuantity, product.getStock());
@@ -80,16 +95,17 @@ public class CartServiceImpl implements ICartService {
             cartMapper.updateCartQuantity(userId, productId, newQuantity);
             existingCartItem.setQuantity(newQuantity);
             return existingCartItem;
-        } else {
-            // 不存在，创建新购物车项
-            Cart cartItem = new Cart();
-            cartItem.setUserId(userId);
-            cartItem.setProductId(productId);
-            cartItem.setQuantity(quantity);
-            cartItem.setSelected(1); // 默认选中
-            cartMapper.insertCart(cartItem);
-            return cartItem;
         }
+
+        // 不存在或规格不同，创建新购物车项
+        Cart cartItem = new Cart();
+        cartItem.setUserId(userId);
+        cartItem.setProductId(productId);
+        cartItem.setQuantity(quantity);
+        cartItem.setSelected(1); // 默认选中
+        cartItem.setSpec(spec); // 设置规格参数
+        cartMapper.insertCart(cartItem);
+        return cartItem;
     }
 
     /**
@@ -125,6 +141,7 @@ public class CartServiceImpl implements ICartService {
                 cartItemVO.setPrice(product.getPrice());
                 cartItemVO.setQuantity(cart.getQuantity());
                 cartItemVO.setSelected(cart.getSelected());
+                cartItemVO.setSpec(cart.getSpec());
                 cartItemVO.setCreateTime(cart.getCreateTime());
                 cartItemVO.setUpdateTime(cart.getUpdateTime());
                 cartItemVO.calculateSubtotal(); // 计算小计
@@ -149,6 +166,20 @@ public class CartServiceImpl implements ICartService {
      */
     @Override
     public Cart updateProductQuantity(Long userId, Long productId, Long quantity) {
+        return updateProductQuantity(userId, productId, quantity, null);
+    }
+
+    /**
+     * 修改购物车商品数量（带规格参数）
+     *
+     * @param userId    用户ID
+     * @param productId 商品ID
+     * @param quantity  新数量
+     * @param spec      规格参数
+     * @return 购物车项
+     */
+    @Override
+    public Cart updateProductQuantity(Long userId, Long productId, Long quantity, String spec) {
         // 参数验证
         if (userId == null || productId == null || quantity == null) {
             throw new IllegalArgumentException("参数不能为空");
@@ -172,9 +203,53 @@ public class CartServiceImpl implements ICartService {
         int result = cartMapper.updateCartQuantity(userId, productId, quantity);
         if (result > 0) {
             // 查询更新后的购物车项
-            return cartMapper.selectCartByUserIdAndProductId(userId, productId);
+            return cartMapper.selectCartByUserIdAndProductIdAndSpec(userId, productId, spec);
         } else {
             throw new RuntimeException("更新失败，购物车项不存在");
+        }
+    }
+
+    /**
+     * 根据购物车ID修改购物车商品数量
+     *
+     * @param cartId   购物车ID
+     * @param quantity  新数量
+     * @return 购物车项
+     */
+    @Override
+    public Cart updateProductQuantityById(Long cartId, Long quantity) {
+        // 参数验证
+        if (cartId == null || quantity == null) {
+            throw new IllegalArgumentException("参数不能为空");
+        }
+
+        // 查询购物车项
+        Cart cartItem = cartMapper.selectCartByIds(Collections.singletonList(cartId)).get(0);
+        if (cartItem == null) {
+            throw new RuntimeException("购物车项不存在");
+        }
+
+        // 获取商品信息
+        Product product = productService.selectProductById(cartItem.getProductId());
+        if (product == null) {
+            throw new RuntimeException("商品不存在");
+        }
+
+        // 检查库存
+        if (product.getStock() == null || product.getStock() < quantity) {
+            throw new RuntimeException("商品库存不足");
+        }
+
+        // 检查数量限制
+        quantity = validateQuantity(quantity, product.getStock());
+
+        // 更新购物车数量
+        int result = cartMapper.updateCartQuantityById(cartId, quantity);
+        if (result > 0) {
+            // 查询更新后的购物车项
+            return cartMapper.selectCartByIds(Collections.singletonList(cartId)).get(0);
+        } else {
+            throw new RuntimeException("更新失败");
         }
     }
 
@@ -187,19 +262,50 @@ public class CartServiceImpl implements ICartService {
      */
     @Override
     public boolean deleteProductFromCart(Long userId, Long productId) {
+        return deleteProductFromCart(userId, productId, null);
+    }
+
+    /**
+     * 删除购物车商品（带规格参数）
+     *
+     * @param userId    用户ID
+     * @param productId 商品ID
+     * @param spec      规格参数
+     * @return 删除结果
+     */
+    @Override
+    public boolean deleteProductFromCart(Long userId, Long productId, String spec) {
         // 参数验证
         if (userId == null || productId == null) {
             throw new IllegalArgumentException("参数不能为空");
         }
 
         // 检查购物车项是否存在
-        Cart cartItem = cartMapper.selectCartByUserIdAndProductId(userId, productId);
+        Cart cartItem = cartMapper.selectCartByUserIdAndProductIdAndSpec(userId, productId, spec);
         if (cartItem == null) {
             throw new RuntimeException("购物车项不存在");
         }
 
         // 删除购物车项
         int result = cartMapper.deleteCart(userId, productId);
+        return result > 0;
+    }
+
+    /**
+     * 根据购物车ID删除购物车商品
+     *
+     * @param cartId 购物车ID
+     * @return 删除结果
+     */
+    @Override
+    public boolean deleteProductFromCartById(Long cartId) {
+        // 参数验证
+        if (cartId == null) {
+            throw new IllegalArgumentException("购物车ID不能为空");
+        }
+
+        // 删除购物车项
+        int result = cartMapper.deleteCartById(cartId);
         return result > 0;
     }
 
@@ -219,6 +325,25 @@ public class CartServiceImpl implements ICartService {
 
         // 批量删除购物车项
         int result = cartMapper.deleteCartBatch(userId, productIds);
+        return result > 0;
+    }
+
+    /**
+     * 删除选中的购物车商品
+     *
+     * @param userId  用户ID
+     * @param cartIds 购物车ID列表
+     * @return 删除结果
+     */
+    @Override
+    public boolean deleteSelectedProductsFromCart(Long userId, List<Long> cartIds) {
+        // 参数验证
+        if (userId == null || cartIds == null || cartIds.isEmpty()) {
+            throw new IllegalArgumentException("参数不能为空");
+        }
+
+        // 批量删除选中的购物车项
+        int result = cartMapper.deleteCartBatch(userId, cartIds);
         return result > 0;
     }
 
@@ -250,13 +375,46 @@ public class CartServiceImpl implements ICartService {
      */
     @Override
     public Cart toggleProductSelected(Long userId, Long productId, Integer selected) {
+        return toggleProductSelected(userId, productId, selected, null);
+    }
+
+    /**
+     * 根据购物车ID切换商品选中状态
+     *
+     * @param cartId   购物车ID
+     * @param selected  选中状态
+     * @return 切换结果
+     */
+    @Override
+    public boolean toggleProductSelectedById(Long cartId, Integer selected) {
+        // 参数验证
+        if (cartId == null || selected == null) {
+            throw new IllegalArgumentException("参数不能为空");
+        }
+
+        // 更新选中状态
+        int result = cartMapper.updateCartSelectedById(cartId, selected);
+        return result > 0;
+    }
+
+    /**
+     * 切换商品选中状态（带规格参数）
+     *
+     * @param userId    用户ID
+     * @param productId 商品ID
+     * @param selected  选中状态
+     * @param spec      规格参数
+     * @return 购物车项
+     */
+    @Override
+    public Cart toggleProductSelected(Long userId, Long productId, Integer selected, String spec) {
         // 参数验证
         if (userId == null || productId == null || selected == null) {
             throw new IllegalArgumentException("参数不能为空");
         }
 
         // 检查购物车项是否存在
-        Cart cartItem = cartMapper.selectCartByUserIdAndProductId(userId, productId);
+        Cart cartItem = cartMapper.selectCartByUserIdAndProductIdAndSpec(userId, productId, spec);
         if (cartItem == null) {
             throw new RuntimeException("购物车项不存在");
         }

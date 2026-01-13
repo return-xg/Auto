@@ -81,7 +81,7 @@ public class OrderServiceImpl implements IOrderService {
             throw new IllegalArgumentException("用户ID不能为空");
         }
 
-        if (createOrderDTO.getProductIds() == null || createOrderDTO.getProductIds().isEmpty()) {
+        if (createOrderDTO.getCartIds() == null || createOrderDTO.getCartIds().isEmpty()) {
             throw new IllegalArgumentException("请选择要购买的商品");
         }
 
@@ -110,13 +110,7 @@ public class OrderServiceImpl implements IOrderService {
             throw new IllegalArgumentException("收货地址不属于当前用户");
         }
 
-        List<Cart> cartItems = new ArrayList<>();
-        for (Long productId : createOrderDTO.getProductIds()) {
-            Cart cart = cartMapper.selectCartByUserIdAndProductId(createOrderDTO.getUserId(), productId);
-            if (cart != null) {
-                cartItems.add(cart);
-            }
-        }
+        List<Cart> cartItems = cartMapper.selectCartByIds(createOrderDTO.getCartIds());
 
         if (cartItems.isEmpty()) {
             throw new IllegalArgumentException("购物车中没有选中的商品");
@@ -143,7 +137,7 @@ public class OrderServiceImpl implements IOrderService {
             orderProduct.setProductId(product.getId());
             orderProduct.setProductName(product.getName());
             orderProduct.setProductImage(product.getMainImage());
-            orderProduct.setProductSpec(product.getSpec());
+            orderProduct.setProductSpec(cart.getSpec());
             orderProduct.setPrice(product.getPrice());
             orderProduct.setQuantity(cart.getQuantity());
             orderProduct.setTotalPrice(product.getPrice().multiply(new BigDecimal(cart.getQuantity())));
@@ -195,7 +189,7 @@ public class OrderServiceImpl implements IOrderService {
             orderMapper.updateOrder(order);
         }
 
-        cartMapper.deleteCartBatch(createOrderDTO.getUserId(), createOrderDTO.getProductIds());
+        cartMapper.deleteCartBatch(createOrderDTO.getUserId(), createOrderDTO.getCartIds());
 
         return getOrderById(order.getId());
     }
