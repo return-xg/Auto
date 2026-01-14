@@ -48,6 +48,13 @@
         order by create_time desc
     </select>
 
+    <select id="selectRefundReturnByOrderId" parameterType="Long" resultMap="RefundReturnResult">
+        <include refid="selectRefundReturnVo"/>
+        where order_id = #{orderId}
+        order by create_time desc
+        limit 1
+    </select>
+
     <select id="selectRefundReturnListByUserId" parameterType="Long" resultMap="RefundReturnResult">
         <include refid="selectRefundReturnVo"/>
         where user_id = #{userId}

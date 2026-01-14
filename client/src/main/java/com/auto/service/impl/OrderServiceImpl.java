@@ -507,6 +507,16 @@ public class OrderServiceImpl implements IOrderService {
             throw new RuntimeException("已取消订单不能申请退款");
         }
 
+        RefundReturn existingRefund = refundReturnMapper.selectRefundReturnByOrderId(refundApplyDTO.getOrderId());
+        if (existingRefund != null) {
+            if (existingRefund.getStatus() == 0) {
+                throw new RuntimeException("该订单已有待审核的退款申请，请等待管理员审核或取消当前申请");
+            }
+            if (existingRefund.getStatus() == 3 || existingRefund.getStatus() == 5) {
+                throw new RuntimeException("该订单退款流程正在进行中，无法再次申请");
+            }
+        }
+
         RefundReturn refundReturn = new RefundReturn();
         refundReturn.setOrderId(refundApplyDTO.getOrderId());
         refundReturn.setUserId(refundApplyDTO.getUserId());
@@ -520,6 +530,32 @@ public class OrderServiceImpl implements IOrderService {
         refundReturnMapper.insertRefundReturn(refundReturn);
 
         return getOrderById(refundApplyDTO.getOrderId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderVO cancelRefund(Long orderId) {
+        if (orderId == null) {
+            throw new IllegalArgumentException("订单ID不能为空");
+        }
+
+        Order order = orderMapper.selectOrderById(orderId);
+        if (order == null) {
+            throw new RuntimeException("订单不存在");
+        }
+
+        RefundReturn refundReturn = refundReturnMapper.selectRefundReturnByOrderId(orderId);
+        if (refundReturn == null) {
+            throw new RuntimeException("该订单没有退款申请");
+        }
+
+        if (refundReturn.getStatus() != 0) {
+            throw new RuntimeException("只有待审核的退款申请才能取消");
+        }
+
+        refundReturnMapper.deleteRefundReturnById(refundReturn.getId());
+
+        return getOrderById(orderId);
     }
 
     @Override
@@ -587,10 +623,15 @@ public class OrderServiceImpl implements IOrderService {
         orderVO.setStatusText(getStatusText(order.getStatus()));
         orderVO.setDeliveryTypeText(getDeliveryTypeText(order.getDeliveryType()));
 
+        RefundReturn refundReturn = refundReturnMapper.selectRefundReturnByOrderId(order.getId());
+        if (refundReturn != null) {
+            orderVO.setRefundStatus(refundReturn.getStatus());
+        }
+
         if (order.getAddressId() != null) {
             UserAddress address = userAddressMapper.selectUserAddressById(order.getAddressId());
             if (address != null) {
-                orderVO.setAddressInfo(address.getProvince() + address.getCity() + address.getDistrict() + address.getDetail());
+                orderVO.setAddressInfo(address);
             }
         }
 
@@ -707,16 +748,35 @@ public class OrderServiceImpl implements IOrderService {
         if (orderIds == null || orderIds.length == 0) {
             throw new IllegalArgumentException("订单ID数组不能为空");
         }
-
-        int count = 0;
+        
+        List<String> errorMessages = new ArrayList<>();
+        int successCount = 0;
+        
         for (Long orderId : orderIds) {
             try {
-                count += deleteOrder(orderId);
+                Order order = orderMapper.selectOrderById(orderId);
+                if (order == null) {
+                    errorMessages.add("订单 " + orderId + " 不存在");
+                    continue;
+                }
+                
+                if (!order.getStatus().equals(ORDER_STATUS_CANCELLED) && !order.getStatus().equals(ORDER_STATUS_COMPLETED)) {
+                    errorMessages.add("订单 " + order.getOrderNo() + " 只能删除已取消或已完成的订单");
+                    continue;
+                }
+                
+                orderProductMapper.deleteOrderProductByOrderId(orderId);
+                orderMapper.deleteOrderById(orderId);
+                successCount++;
             } catch (Exception e) {
-                e.printStackTrace();
+                errorMessages.add("订单 " + orderId + " 删除失败：" + e.getMessage());
             }
         }
-
-        return count;
+        
+        if (!errorMessages.isEmpty()) {
+            throw new RuntimeException(String.join("; ", errorMessages));
+        }
+        
+        return successCount;
     }
 }

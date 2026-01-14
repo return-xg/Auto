@@ -10,6 +10,8 @@ import java.util.List;
 public interface RefundReturnMapper {
     RefundReturn selectRefundReturnById(Long id);
 
+    RefundReturn selectRefundReturnByOrderId(Long orderId);
+
     List<RefundReturn> selectRefundReturnListByOrderId(Long orderId);
 
     List<RefundReturn> selectRefundReturnListByUserId(Long userId);

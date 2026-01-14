@@ -3,6 +3,7 @@ package com.auto.domain.vo;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import com.auto.domain.UserAddress;
 
 public class OrderVO {
     private Long id;
@@ -17,7 +18,7 @@ public class OrderVO {
     private Integer deliveryType;
     private String deliveryTypeText;
     private Long addressId;
-    private String addressInfo;
+    private UserAddress addressInfo;
     private Long storeId;
     private String storeInfo;
     private Long appointmentId;
@@ -30,6 +31,7 @@ public class OrderVO {
     private Date updateTime;
     private List<OrderProductVO> products;
     private String logisticsInfo;
+    private Long refundStatus;
     private Boolean canCancel;
     private Boolean canPay;
     private Boolean canConfirm;
@@ -131,11 +133,11 @@ public class OrderVO {
         this.addressId = addressId;
     }
 
-    public String getAddressInfo() {
+    public UserAddress getAddressInfo() {
         return addressInfo;
     }
 
-    public void setAddressInfo(String addressInfo) {
+    public void setAddressInfo(UserAddress addressInfo) {
         this.addressInfo = addressInfo;
     }
 
@@ -233,6 +235,14 @@ public class OrderVO {
 
     public void setLogisticsInfo(String logisticsInfo) {
         this.logisticsInfo = logisticsInfo;
+    }
+
+    public Long getRefundStatus() {
+        return refundStatus;
+    }
+
+    public void setRefundStatus(Long refundStatus) {
+        this.refundStatus = refundStatus;
     }
 
     public Boolean getCanCancel() {

@@ -24,51 +24,67 @@
         <result property="closeTime"    column="close_time"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
+        <association property="addressInfo" javaType="UserAddress" resultMap="AddressResult" />
+    </resultMap>
+
+    <resultMap type="UserAddress" id="AddressResult">
+        <result property="id"    column="addr_id"    />
+        <result property="userId"    column="addr_user_id"    />
+        <result property="consignee"    column="consignee"    />
+        <result property="phone"    column="phone"    />
+        <result property="province"    column="province"    />
+        <result property="city"    column="city"    />
+        <result property="district"    column="district"    />
+        <result property="detail"    column="detail"    />
+        <result property="isDefault"    column="is_default"    />
     </resultMap>
 
     <sql id="selectOrderVo">
-        select id, order_no, user_id, total_price, pay_price, freight_price, pay_type, status,
-               delivery_type, address_id, store_id, appointment_id, transaction_id,
-               pay_time, delivery_time, receive_time, close_time, create_time, update_time
-        from `order`
+        select o.id, o.order_no, o.user_id, o.total_price, o.pay_price, o.freight_price, o.pay_type, o.status,
+               o.delivery_type, o.address_id, o.store_id, o.appointment_id, o.transaction_id,
+               o.pay_time, o.delivery_time, o.receive_time, o.close_time, o.create_time, o.update_time,
+               ua.id as addr_id, ua.user_id as addr_user_id, ua.consignee, ua.phone,
+               ua.province, ua.city, ua.district, ua.detail, ua.is_default
+        from `order` o
+        left join user_address ua on o.address_id = ua.id
     </sql>
 
     <select id="selectOrderList" parameterType="Order" resultMap="OrderResult">
         <include refid="selectOrderVo"/>
         <where>
             <if test="orderNo != null and orderNo != ''">
-                and order_no = #{orderNo}
+                and o.order_no = #{orderNo}
             </if>
             <if test="userId != null">
-                and user_id = #{userId}
+                and o.user_id = #{userId}
             </if>
             <if test="status != null">
-                and status = #{status}
+                and o.status = #{status}
             </if>
             <if test="payType != null">
-                and pay_type = #{payType}
+                and o.pay_type = #{payType}
             </if>
             <if test="deliveryType != null">
-                and delivery_type = #{deliveryType}
+                and o.delivery_type = #{deliveryType}
             </if>
         </where>
-        order by create_time desc
+        order by o.create_time desc
     </select>
 
     <select id="selectOrderListByUserId" parameterType="Long" resultMap="OrderResult">
         <include refid="selectOrderVo"/>
-        where user_id = #{userId}
+        where o.user_id = #{userId}
         order by create_time desc
     </select>
 
     <select id="selectOrderById" parameterType="Long" resultMap="OrderResult">
         <include refid="selectOrderVo"/>
-        where id = #{id}
+        where o.id = #{id}
     </select>
 
     <select id="selectOrderByOrderNo" parameterType="String" resultMap="OrderResult">
         <include refid="selectOrderVo"/>
-        where order_no = #{orderNo}
+        where o.order_no = #{orderNo}
     </select>
 
     <insert id="insertOrder" parameterType="Order" useGeneratedKeys="true" keyProperty="id">

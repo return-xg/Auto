@@ -12,6 +12,7 @@
         <el-tab-pane label="已发货" name="2"></el-tab-pane>
         <el-tab-pane label="已完成" name="3"></el-tab-pane>
         <el-tab-pane label="已取消" name="4"></el-tab-pane>
+        <el-tab-pane label="售后" name="refund"></el-tab-pane>
       </el-tabs>
 
       <div v-loading="loading">
@@ -29,10 +30,11 @@
               <div class="order-info">
                 <el-checkbox v-model="order.selected" @change="handleSelectChange"></el-checkbox>
                 <span class="order-no">订单号：{{ order.orderNo }}</span>
-                <span class="order-time">{{ order.createTime }}</span>
+                <span class="order-time">{{ formatOrderTime(order.createTime) }}</span>
               </div>
               <div class="order-status">
                 <el-tag :type="getStatusType(order.status)">{{ getStatusText(order.status) }}</el-tag>
+                <el-tag v-if="order.refundStatus !== undefined && order.refundStatus !== null" :type="getRefundStatusType(order.refundStatus)" style="margin-left: 10px;">{{ getRefundStatusText(order.refundStatus) }}</el-tag>
               </div>
             </div>
 
@@ -116,7 +118,7 @@
                   取消订单
                 </el-button>
                 <el-button
-                  v-if="order.status === 2"
+                  v-if="order.status === 2 && order.deliveryType === 1"
                   type="success"
                   size="small"
                   @click="viewLogistics(order)"
@@ -132,12 +134,28 @@
                   确认收货
                 </el-button>
                 <el-button
-                  v-if="order.status === 3"
+                  v-if="canApplyRefund(order)"
                   type="info"
                   size="small"
                   @click="handleRefund(order)"
                 >
                   申请退款
+                </el-button>
+                <el-button
+                  v-if="order.refundStatus === 0"
+                  type="danger"
+                  size="small"
+                  @click="handleCancelRefund(order)"
+                >
+                  取消退款
+                </el-button>
+                <el-button
+                  v-if="order.refundStatus === 3 || order.refundStatus === 4 || order.refundStatus === 5 || order.refundStatus === 6"
+                  type="info"
+                  size="small"
+                  @click="viewRefundDetail(order)"
+                >
+                  退款详情
                 </el-button>
                 <el-button
                   type="danger"
@@ -167,7 +185,6 @@
         <div v-else class="empty-orders">
           <i class="el-icon-document"></i>
           <p>暂无订单</p>
-          <el-button type="primary" @click="goToShop">去购物</el-button>
         </div>
       </div>
     </el-card>
@@ -190,6 +207,7 @@
       :order="currentOrder"
       @close="refundDialogVisible = false"
       @submit="handleRefundSubmit"
+      @cancelRefund="handleRefundCancel"
     />
 
     <pay-dialog
@@ -203,7 +221,7 @@
 </template>
 
 <script>
-import { listOrder, cancelOrder, confirmOrder, deleteOrder, deleteOrderBatch } from '@/api/order/order'
+import { listOrder, cancelOrder, confirmOrder, deleteOrder, deleteOrderBatch, cancelRefund } from '@/api/order/order'
 import OrderDetailDialog from './OrderDetailDialog.vue'
 import LogisticsDialog from './LogisticsDialog.vue'
 import RefundDialog from './RefundDialog.vue'
@@ -261,6 +279,21 @@ export default {
         return {}
       }
     },
+    formatOrderTime(timeStr) {
+      if (!timeStr) return '-'
+      try {
+        const date = new Date(timeStr)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        const seconds = String(date.getSeconds()).padStart(2, '0')
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+      } catch (e) {
+        return timeStr
+      }
+    },
     loadOrderList() {
       this.loading = true
       const userId = this.$store.getters.id
@@ -268,14 +301,23 @@ export default {
         userId
       }
       
-      if (this.activeTab !== 'all') {
+      if (this.activeTab !== 'all' && this.activeTab !== 'refund') {
         queryParams.status = this.activeTab
       }
 
       listOrder(queryParams).then(response => {
         this.loading = false
         if (response.code === 200) {
-          this.orderList = response.data || []
+          let orderList = response.data || []
+          
+          if (this.activeTab === 'refund') {
+            orderList = orderList.filter(order => 
+              order.refundStatus !== undefined && 
+              order.refundStatus !== null
+            )
+          }
+          
+          this.orderList = orderList
           this.pagination.total = this.orderList.length
         }
       }).catch(error => {
@@ -314,6 +356,45 @@ export default {
         4: '已取消'
       }
       return textMap[status] || '未知'
+    },
+    getRefundStatusType(refundStatus) {
+      const typeMap = {
+        0: 'warning',
+        1: 'success',
+        2: 'danger',
+        3: 'primary',
+        4: 'success',
+        5: 'primary',
+        6: 'success'
+      }
+      return typeMap[refundStatus] || 'info'
+    },
+    getRefundStatusText(refundStatus) {
+      const textMap = {
+        0: '待审核',
+        1: '审核通过',
+        2: '审核拒绝',
+        3: '退款中',
+        4: '退款成功',
+        5: '退货中',
+        6: '退货完成'
+      }
+      return textMap[refundStatus] || '未知'
+    },
+    canApplyRefund(order) {
+      if (order.status !== 3) {
+        return false
+      }
+      if (order.refundStatus === undefined || order.refundStatus === null) {
+        return true
+      }
+      if (order.refundStatus === 0) {
+        return false
+      }
+      if (order.refundStatus === 3 || order.refundStatus === 4 || order.refundStatus === 5 || order.refundStatus === 6) {
+        return false
+      }
+      return true
     },
     viewOrderDetail(order) {
       this.currentOrder = order
@@ -377,15 +458,47 @@ export default {
       })
     },
     handleRefund(order) {
+      if (order.refundStatus === 0) {
+        this.$message.warning('该订单已有退款申请，请等待管理员审核或取消当前申请')
+        return
+      }
+      if (order.refundStatus === 3 || order.refundStatus === 4 || order.refundStatus === 5 || order.refundStatus === 6) {
+        this.$message.warning('该订单退款流程正在进行中，无法再次申请')
+        return
+      }
       this.currentOrder = order
       this.refundDialogVisible = true
     },
     handleRefundSubmit(data) {
       this.$message.success('退款申请已提交')
       this.refundDialogVisible = false
+      this.loadOrderList()
     },
-    goToShop() {
-      this.$router.push('/product/userIndex')
+    handleRefundCancel() {
+      this.loadOrderList()
+    },
+    handleCancelRefund(order) {
+      this.$confirm('确定要取消该退款申请吗？取消后订单将恢复为可申请退款状态。', '取消退款申请', {
+        confirmButtonText: '确定取消',
+        cancelButtonText: '再想想',
+        type: 'warning'
+      }).then(() => {
+        return cancelRefund(order.id)
+      }).then(response => {
+        if (response.code === 200) {
+          this.$message.success('退款申请已取消')
+          this.loadOrderList()
+        } else {
+          this.$message.error(response.msg || '取消失败')
+        }
+      }).catch(error => {
+        if (error !== 'cancel') {
+          this.$message.error('取消失败')
+        }
+      })
+    },
+    viewRefundDetail(order) {
+      this.$message.info('退款详情功能开发中')
     },
     handleSelectChange() {
     },
@@ -426,15 +539,21 @@ export default {
         return deleteOrderBatch(orderIds)
       }).then(response => {
         if (response.code === 200) {
-          this.$message.success(`成功删除 ${selectedCount} 个订单`)
+          const successCount = response.data || 0
+          if (successCount === selectedCount) {
+            this.$message.success(`成功删除 ${successCount} 个订单`)
+          } else if (successCount > 0) {
+            this.$message.warning(`成功删除 ${successCount} 个订单，${selectedCount - successCount} 个订单删除失败`)
+          } else {
+            this.$message.error('删除失败，请检查订单状态')
+          }
           this.clearSelection()
           this.loadOrderList()
-        } else {
-          this.$message.error(response.msg || '批量删除失败')
         }
       }).catch(error => {
         if (error !== 'cancel') {
-          this.$message.error('批量删除失败')
+          const errorMsg = error.response?.data?.msg || error.message || '批量删除失败'
+          this.$message.error(errorMsg)
         }
       })
     }

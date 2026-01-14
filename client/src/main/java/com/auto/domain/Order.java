@@ -57,6 +57,9 @@ public class Order extends BaseEntity
     @Excel(name = "收货地址ID")
     private Long addressId;
 
+    /** 收货地址信息 */
+    private UserAddress addressInfo;
+
     /** 门店ID（如果选择门店安装） */
     @Excel(name = "门店ID", readConverterExp = "如=果选择门店安装")
     private Long storeId;
@@ -186,6 +189,16 @@ public class Order extends BaseEntity
     public Long getAddressId()
     {
         return addressId;
+    }
+
+    public void setAddressInfo(UserAddress addressInfo)
+    {
+        this.addressInfo = addressInfo;
+    }
+
+    public UserAddress getAddressInfo()
+    {
+        return addressInfo;
     }
 
     public void setStoreId(Long storeId)

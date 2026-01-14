@@ -181,6 +181,22 @@ public class OrderController {
     }
 
     /**
+     * 取消退款申请
+     *
+     * @param orderId 订单ID
+     * @return AjaxResult 包含取消退款结果的响应对象
+     */
+    @PostMapping("/cancelRefund")
+    public AjaxResult cancelRefund(@RequestParam Long orderId) {
+        try {
+            OrderVO orderVO = orderService.cancelRefund(orderId);
+            return AjaxResult.success("退款申请已取消", orderVO);
+        } catch (Exception e) {
+            return AjaxResult.error(e.getMessage());
+        }
+    }
+
+    /**
      * 删除订单
      *
      * @param orderId 订单ID

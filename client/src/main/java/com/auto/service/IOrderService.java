@@ -30,6 +30,8 @@ public interface IOrderService {
 
     OrderVO applyRefund(RefundApplyDTO refundApplyDTO);
 
+    OrderVO cancelRefund(Long orderId);
+
     void autoConfirmOrder(Long orderId);
 
     void autoUpdateLogistics(Long orderId);

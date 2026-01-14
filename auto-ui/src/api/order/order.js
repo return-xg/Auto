@@ -84,9 +84,19 @@ export function payOrder(id, data) {
 
 export function refundOrder(id, data) {
   return request({
-    url: '/order/' + id + '/refund',
+    url: '/order/refund',
     method: 'post',
     data: data
+  })
+}
+
+export function cancelRefund(id) {
+  return request({
+    url: '/order/cancelRefund',
+    method: 'post',
+    params: {
+      orderId: id
+    }
   })
 }
 
