@@ -13,14 +13,16 @@
             :data="favoriteList"
             border
             stripe
+            style="width: 100%"
           >
-            <el-table-column label="商品信息" width="450">
+            <el-table-column label="商品信息" min-width="400">
               <template slot-scope="scope">
                 <div class="product-info">
                   <el-image
-                    :src="(scope.row.product && scope.row.product.mainImage) || '/static/images/default-product.png'"
+                    :src="getProductImage(scope.row)"
                     fit="cover"
                     style="width: 100px; height: 100px; border-radius: 4px;"
+                    :preview-src-list="[getProductImage(scope.row)]"
                   >
                     <div slot="error" class="image-error">
                       <i class="el-icon-picture-outline"></i>
@@ -37,23 +39,23 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="价格" width="150">
+            <el-table-column label="价格" min-width="120" align="center">
               <template slot-scope="scope">
                 <span class="price">¥{{ Number(scope.row.product && scope.row.product.price).toFixed(2) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="收藏时间" width="180">
+            <el-table-column label="收藏时间" min-width="150" align="center">
               <template slot-scope="scope">
                 {{ formatTime(scope.row.createTime) }}
               </template>
             </el-table-column>
-            <el-table-column label="状态" width="100">
+            <el-table-column label="状态" min-width="80" align="center">
               <template slot-scope="scope">
                 <el-tag v-if="scope.row.product && scope.row.product.status === 1" type="success">在售</el-tag>
                 <el-tag v-else type="info">已下架</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="280">
+            <el-table-column label="操作" min-width="200" align="center">
               <template slot-scope="scope">
                 <div class="action-buttons">
                   <el-button
@@ -101,12 +103,12 @@
     <el-dialog
       title="加入购物车"
       :visible.sync="cartDialogVisible"
-      width="400px"
+      width="500px"
     >
       <div v-if="currentProduct">
         <div class="dialog-product-info">
           <el-image
-            :src="currentProduct.product && currentProduct.product.mainImage || '/static/images/default-product.png'"
+            :src="getProductImage(currentProduct)"
             fit="cover"
             style="width: 80px; height: 80px; border-radius: 4px;"
           />
@@ -116,6 +118,25 @@
             <div class="dialog-product-stock">库存: {{ currentProduct.product && currentProduct.product.stock || 0 }}</div>
           </div>
         </div>
+        
+        <div class="spec-section" v-if="parsedSpecList.length > 0">
+          <div v-for="(specItem, index) in parsedSpecList" :key="index" class="spec-item">
+            <div class="spec-name">{{ specItem.name }}：</div>
+            <div class="spec-values">
+              <el-tag
+                v-for="(value, vIndex) in specItem.values"
+                :key="vIndex"
+                :type="selectedSpecs[specItem.name] === value ? 'primary' : 'info'"
+                :effect="selectedSpecs[specItem.name] === value ? 'dark' : 'plain'"
+                @click="selectSpec(specItem.name, value)"
+                class="spec-tag"
+              >
+                {{ value }}
+              </el-tag>
+            </div>
+          </div>
+        </div>
+        
         <div class="quantity-selector">
           <span class="quantity-label">数量：</span>
           <el-input-number
@@ -152,13 +173,43 @@ export default {
       },
       cartDialogVisible: false,
       currentProduct: null,
-      cartQuantity: 1
+      cartQuantity: 1,
+      selectedSpecs: {}
+    }
+  },
+  computed: {
+    parsedSpecList() {
+      if (!this.currentProduct || !this.currentProduct.product || !this.currentProduct.product.spec) return []
+      try {
+        const specData = typeof this.currentProduct.product.spec === 'string' ? JSON.parse(this.currentProduct.product.spec) : this.currentProduct.product.spec
+        if (Array.isArray(specData)) {
+          return specData
+        }
+      } catch (e) {
+        console.error('解析规格参数失败:', e)
+      }
+      return []
     }
   },
   mounted() {
     this.loadFavoriteList()
   },
   methods: {
+    getProductImage(row) {
+      let imageUrl = ''
+      if (row.product && row.product.mainImage) {
+        imageUrl = row.product.mainImage
+      }
+
+      if (!imageUrl) {
+        return '/static/images/default-product.png'
+      }
+
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        return imageUrl
+      }
+      return process.env.VUE_APP_BASE_API + imageUrl
+    },
     loadFavoriteList() {
       this.loading = true
       const queryParams = {
@@ -212,7 +263,22 @@ export default {
       
       this.currentProduct = row
       this.cartQuantity = 1
+      this.selectedSpecs = {}
       this.cartDialogVisible = true
+    },
+    selectSpec(specName, value) {
+      if (this.selectedSpecs[specName] === value) {
+        this.$delete(this.selectedSpecs, specName)
+      } else {
+        this.$set(this.selectedSpecs, specName, value)
+      }
+    },
+    getSelectedSpecText() {
+      const specs = {}
+      for (const [key, value] of Object.entries(this.selectedSpecs)) {
+        specs[key] = value
+      }
+      return Object.keys(specs).length > 0 ? JSON.stringify(specs) : null
     },
     confirmAddToCart() {
       const userId = this.$store.getters.id
@@ -227,10 +293,18 @@ export default {
         return
       }
       
+      if (this.parsedSpecList.length > 0 && Object.keys(this.selectedSpecs).length === 0) {
+        this.$message.warning('请选择商品规格')
+        return
+      }
+      
+      const specText = this.getSelectedSpecText()
+      
       addToCart({
         userId,
         productId: this.currentProduct.productId,
-        quantity: this.cartQuantity
+        quantity: this.cartQuantity,
+        spec: specText
       }).then(response => {
         if (response.code === 200) {
           this.$message.success(`已添加${this.cartQuantity}件商品到购物车`)
@@ -373,13 +447,15 @@ export default {
 .action-buttons {
   display: flex;
   gap: 8px;
+  justify-content: center;
   
   .el-button {
     flex: 1;
     border-radius: 4px;
     font-size: 13px;
-    padding: 8px 12px;
+    padding: 6px 10px;
     transition: all 0.3s;
+    min-width: 80px;
     
     &:hover:not(:disabled) {
       transform: translateY(-2px);
@@ -432,6 +508,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 15px;
+  margin-top: 20px;
 
   .quantity-label {
     font-size: 14px;
@@ -440,6 +517,45 @@ export default {
 
   .el-input-number {
     flex: 1;
+  }
+}
+
+.spec-section {
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 20px;
+
+  .spec-item {
+    margin-bottom: 15px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .spec-name {
+      font-size: 14px;
+      color: #606266;
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+
+    .spec-values {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+
+      .spec-tag {
+        cursor: pointer;
+        transition: all 0.3s;
+        user-select: none;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+      }
+    }
   }
 }
 
