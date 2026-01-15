@@ -150,7 +150,7 @@
                   取消退款
                 </el-button>
                 <el-button
-                  v-if="order.refundStatus === 3 || order.refundStatus === 4 || order.refundStatus === 5 || order.refundStatus === 6"
+                  v-if="order.refundStatus === 2 || order.refundStatus === 3 || order.refundStatus === 4 || order.refundStatus === 5 || order.refundStatus === 6"
                   type="info"
                   size="small"
                   @click="viewRefundDetail(order)"
@@ -210,6 +210,12 @@
       @cancelRefund="handleRefundCancel"
     />
 
+    <refund-detail-dialog
+      :visible="refundDetailDialogVisible"
+      :order="currentOrder"
+      @close="refundDetailDialogVisible = false"
+    />
+
     <pay-dialog
       :visible="payDialogVisible"
       :order="currentOrder"
@@ -225,6 +231,7 @@ import { listOrder, cancelOrder, confirmOrder, deleteOrder, deleteOrderBatch, ca
 import OrderDetailDialog from './OrderDetailDialog.vue'
 import LogisticsDialog from './LogisticsDialog.vue'
 import RefundDialog from './RefundDialog.vue'
+import RefundDetailDialog from './RefundDetailDialog.vue'
 import PayDialog from './PayDialog.vue'
 
 export default {
@@ -233,6 +240,7 @@ export default {
     OrderDetailDialog,
     LogisticsDialog,
     RefundDialog,
+    RefundDetailDialog,
     PayDialog
   },
   data() {
@@ -248,6 +256,7 @@ export default {
       detailDialogVisible: false,
       logisticsDialogVisible: false,
       refundDialogVisible: false,
+      refundDetailDialogVisible: false,
       payDialogVisible: false,
       currentOrder: {}
     }
@@ -300,7 +309,7 @@ export default {
       const queryParams = {
         userId
       }
-      
+
       if (this.activeTab !== 'all' && this.activeTab !== 'refund') {
         queryParams.status = this.activeTab
       }
@@ -309,14 +318,14 @@ export default {
         this.loading = false
         if (response.code === 200) {
           let orderList = response.data || []
-          
+
           if (this.activeTab === 'refund') {
-            orderList = orderList.filter(order => 
-              order.refundStatus !== undefined && 
+            orderList = orderList.filter(order =>
+              order.refundStatus !== undefined &&
               order.refundStatus !== null
             )
           }
-          
+
           this.orderList = orderList
           this.pagination.total = this.orderList.length
         }
@@ -372,8 +381,8 @@ export default {
     getRefundStatusText(refundStatus) {
       const textMap = {
         0: '待审核',
-        1: '审核通过',
-        2: '审核拒绝',
+        1: '退款审核通过，钱已原路返回',
+        2: '退款审核拒绝',
         3: '退款中',
         4: '退款成功',
         5: '退货中',
@@ -388,7 +397,7 @@ export default {
       if (order.refundStatus === undefined || order.refundStatus === null) {
         return true
       }
-      if (order.refundStatus === 0) {
+      if (order.refundStatus === 0 || order.refundStatus === 1) {
         return false
       }
       if (order.refundStatus === 3 || order.refundStatus === 4 || order.refundStatus === 5 || order.refundStatus === 6) {
@@ -498,7 +507,8 @@ export default {
       })
     },
     viewRefundDetail(order) {
-      this.$message.info('退款详情功能开发中')
+      this.currentOrder = order
+      this.refundDetailDialogVisible = true
     },
     handleSelectChange() {
     },
@@ -530,7 +540,7 @@ export default {
     handleBatchDelete() {
       const selectedCount = this.selectedOrders.length
       const orderIds = this.selectedOrders.map(order => order.id)
-      
+
       this.$confirm(`确定要删除选中的 ${selectedCount} 个订单吗？删除后无法恢复。`, '批量删除', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',

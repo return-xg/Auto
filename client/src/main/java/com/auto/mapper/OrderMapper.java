@@ -1,6 +1,7 @@
 package com.auto.mapper;
 
 import com.auto.domain.Order;
+import com.auto.domain.vo.OrderVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -15,6 +16,8 @@ public interface OrderMapper {
     List<Order> selectOrderListByUserId(Long userId);
 
     List<Order> selectOrderList(Order order);
+
+    List<OrderVO> selectAdminOrderList(OrderVO orderVO);
 
     int insertOrder(Order order);
 

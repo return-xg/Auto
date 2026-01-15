@@ -39,6 +39,40 @@
         <result property="isDefault"    column="is_default"    />
     </resultMap>
 
+    <resultMap type="OrderVO" id="OrderVOResult">
+        <result property="id"    column="id"    />
+        <result property="orderNo"    column="order_no"    />
+        <result property="userId"    column="user_id"    />
+        <result property="userName"    column="user_name"    />
+        <result property="totalPrice"    column="total_price"    />
+        <result property="payPrice"    column="pay_price"    />
+        <result property="freightPrice"    column="freight_price"    />
+        <result property="payType"    column="pay_type"    />
+        <result property="status"    column="status"    />
+        <result property="deliveryType"    column="delivery_type"    />
+        <result property="addressId"    column="address_id"    />
+        <result property="storeId"    column="store_id"    />
+        <result property="appointmentId"    column="appointment_id"    />
+        <result property="transactionId"    column="transaction_id"    />
+        <result property="payTime"    column="pay_time"    />
+        <result property="deliveryTime"    column="delivery_time"    />
+        <result property="receiveTime"    column="receive_time"    />
+        <result property="closeTime"    column="close_time"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="refundId"    column="refund_id"    />
+        <result property="refundOrderId"    column="refund_order_id"    />
+        <result property="refundUserId"    column="refund_user_id"    />
+        <result property="refundType"    column="refund_type"    />
+        <result property="refundReason"    column="refund_reason"    />
+        <result property="refundAmount"    column="refund_amount"    />
+        <result property="refundEvidence"    column="refund_evidence"    />
+        <result property="refundStatus"    column="refund_status"    />
+        <result property="refundAdminRemark"    column="refund_admin_remark"    />
+        <result property="refundCreateTime"    column="refund_create_time"    />
+        <result property="refundUpdateTime"    column="refund_update_time"    />
+    </resultMap>
+
     <sql id="selectOrderVo">
         select o.id, o.order_no, o.user_id, o.total_price, o.pay_price, o.freight_price, o.pay_type, o.status,
                o.delivery_type, o.address_id, o.store_id, o.appointment_id, o.transaction_id,
@@ -186,5 +220,39 @@
             #{id}
         </foreach>
     </delete>
+
+    <select id="selectAdminOrderList" parameterType="OrderVO" resultMap="OrderVOResult">
+        select o.id, o.order_no, o.user_id, u.nick_name as user_name, o.total_price, o.pay_price, o.freight_price, o.pay_type, o.status,
+               o.delivery_type, o.address_id, o.store_id, o.appointment_id, o.transaction_id,
+               o.pay_time, o.delivery_time, o.receive_time, o.close_time, o.create_time, o.update_time,
+               rr.id as refund_id, rr.order_id as refund_order_id, rr.user_id as refund_user_id, rr.type as refund_type,
+               rr.reason as refund_reason, rr.amount as refund_amount, rr.evidence as refund_evidence,
+               rr.status as refund_status, rr.admin_remark as refund_admin_remark,
+               rr.create_time as refund_create_time, rr.update_time as refund_update_time
+        from `order` o
+        left join sys_user u on o.user_id = u.user_id
+        left join refund_return rr on o.id = rr.order_id
+        <where>
+            <if test="orderNo != null and orderNo != ''">
+                and o.order_no like concat('%', #{orderNo}, '%')
+            </if>
+            <if test="userName != null and userName != ''">
+                and u.nick_name like concat('%', #{userName}, '%')
+            </if>
+            <if test="status != null">
+                and o.status = #{status}
+            </if>
+            <if test="refundStatus != null">
+                and rr.status = #{refundStatus}
+            </if>
+            <if test="beginTime != null and beginTime != ''">
+                and date_format(o.create_time,'%y%m%d') &gt;= date_format(#{beginTime},'%y%m%d')
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and date_format(o.create_time,'%y%m%d') &lt;= date_format(#{endTime},'%y%m%d')
+            </if>
+        </where>
+        order by o.create_time desc
+    </select>
 
 </mapper>

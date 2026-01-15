@@ -23,8 +23,8 @@
           <el-descriptions-item label="订单状态">
             <el-tag :type="getStatusType(orderDetail.status)">{{ getStatusText(orderDetail.status) }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="下单时间">{{ orderDetail.createTime }}</el-descriptions-item>
-          <el-descriptions-item label="支付时间">{{ orderDetail.payTime || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="下单时间">{{ formatOrderTime(orderDetail.createTime) }}</el-descriptions-item>
+          <el-descriptions-item label="支付时间">{{ formatOrderTime(orderDetail.payTime) }}</el-descriptions-item>
           <el-descriptions-item label="配送方式">
             {{ orderDetail.deliveryTypeText || getDeliveryTypeText(orderDetail.deliveryType) }}
           </el-descriptions-item>
@@ -260,6 +260,18 @@ export default {
     },
     formatPrice(row, column) {
       return '¥' + Number(row[column.property]).toFixed(2)
+    },
+    formatOrderTime(timeStr) {
+      if (!timeStr) return '-'
+      try {
+        const date = new Date(timeStr)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+      } catch (e) {
+        return timeStr
+      }
     },
     handleConfirm() {
       this.$confirm('确认已收到商品吗？', '提示', {

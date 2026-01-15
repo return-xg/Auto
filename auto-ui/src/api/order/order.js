@@ -8,6 +8,14 @@ export function listOrder(query) {
   })
 }
 
+export function listAdminOrder(query) {
+  return request({
+    url: '/admin/order/list',
+    method: 'get',
+    params: query
+  })
+}
+
 export function getOrder(id) {
   return request({
     url: '/order/' + id,
@@ -104,5 +112,27 @@ export function getLogistics(id) {
   return request({
     url: '/order/' + id + '/logistics',
     method: 'get'
+  })
+}
+
+export function shipOrder(id, data) {
+  return request({
+    url: '/admin/order/deliver',
+    method: 'post',
+    params: {
+      orderId: id,
+      ...data
+    }
+  })
+}
+
+export function auditRefund(id, data) {
+  return request({
+    url: '/admin/order/auditRefund',
+    method: 'post',
+    params: {
+      orderId: id,
+      ...data
+    }
   })
 }

@@ -18,6 +18,8 @@ public interface IOrderService {
 
     List<OrderVO> getOrderList(Long userId, Long status);
 
+    List<OrderVO> getAdminOrderList(OrderVO orderVO);
+
     OrderVO payOrder(Long orderId, Integer payType, Boolean success);
 
     OrderVO cancelOrder(Long orderId, String reason);

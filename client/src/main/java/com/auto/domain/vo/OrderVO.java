@@ -9,6 +9,7 @@ public class OrderVO {
     private Long id;
     private String orderNo;
     private Long userId;
+    private String userName;
     private BigDecimal totalPrice;
     private BigDecimal payPrice;
     private BigDecimal freightPrice;
@@ -36,6 +37,18 @@ public class OrderVO {
     private Boolean canPay;
     private Boolean canConfirm;
     private Boolean canRefund;
+    private String beginTime;
+    private String endTime;
+    private Long refundId;
+    private Long refundOrderId;
+    private Long refundUserId;
+    private Integer refundType;
+    private String refundReason;
+    private BigDecimal refundAmount;
+    private String refundEvidence;
+    private String refundAdminRemark;
+    private Date refundCreateTime;
+    private Date refundUpdateTime;
 
     public Long getId() {
         return id;
@@ -59,6 +72,14 @@ public class OrderVO {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public BigDecimal getTotalPrice() {
@@ -275,5 +296,101 @@ public class OrderVO {
 
     public void setCanRefund(Boolean canRefund) {
         this.canRefund = canRefund;
+    }
+
+    public String getBeginTime() {
+        return beginTime;
+    }
+
+    public void setBeginTime(String beginTime) {
+        this.beginTime = beginTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+
+    public Long getRefundId() {
+        return refundId;
+    }
+
+    public void setRefundId(Long refundId) {
+        this.refundId = refundId;
+    }
+
+    public Long getRefundOrderId() {
+        return refundOrderId;
+    }
+
+    public void setRefundOrderId(Long refundOrderId) {
+        this.refundOrderId = refundOrderId;
+    }
+
+    public Long getRefundUserId() {
+        return refundUserId;
+    }
+
+    public void setRefundUserId(Long refundUserId) {
+        this.refundUserId = refundUserId;
+    }
+
+    public Integer getRefundType() {
+        return refundType;
+    }
+
+    public void setRefundType(Integer refundType) {
+        this.refundType = refundType;
+    }
+
+    public String getRefundReason() {
+        return refundReason;
+    }
+
+    public void setRefundReason(String refundReason) {
+        this.refundReason = refundReason;
+    }
+
+    public BigDecimal getRefundAmount() {
+        return refundAmount;
+    }
+
+    public void setRefundAmount(BigDecimal refundAmount) {
+        this.refundAmount = refundAmount;
+    }
+
+    public String getRefundEvidence() {
+        return refundEvidence;
+    }
+
+    public void setRefundEvidence(String refundEvidence) {
+        this.refundEvidence = refundEvidence;
+    }
+
+    public String getRefundAdminRemark() {
+        return refundAdminRemark;
+    }
+
+    public void setRefundAdminRemark(String refundAdminRemark) {
+        this.refundAdminRemark = refundAdminRemark;
+    }
+
+    public Date getRefundCreateTime() {
+        return refundCreateTime;
+    }
+
+    public void setRefundCreateTime(Date refundCreateTime) {
+        this.refundCreateTime = refundCreateTime;
+    }
+
+    public Date getRefundUpdateTime() {
+        return refundUpdateTime;
+    }
+
+    public void setRefundUpdateTime(Date refundUpdateTime) {
+        this.refundUpdateTime = refundUpdateTime;
     }
 }

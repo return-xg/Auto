@@ -305,6 +305,16 @@ public class OrderServiceImpl implements IOrderService {
     }
 
     @Override
+    public List<OrderVO> getAdminOrderList(OrderVO orderVO) {
+        List<OrderVO> orderVOList = orderMapper.selectAdminOrderList(orderVO);
+        for (OrderVO vo : orderVOList) {
+            vo.setStatusText(getStatusText(vo.getStatus()));
+            vo.setDeliveryTypeText(getDeliveryTypeText(vo.getDeliveryType()));
+        }
+        return orderVOList;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public OrderVO payOrder(Long orderId, Integer payType, Boolean success) {
         if (orderId == null) {
@@ -626,6 +636,16 @@ public class OrderServiceImpl implements IOrderService {
         RefundReturn refundReturn = refundReturnMapper.selectRefundReturnByOrderId(order.getId());
         if (refundReturn != null) {
             orderVO.setRefundStatus(refundReturn.getStatus());
+            orderVO.setRefundId(refundReturn.getId());
+            orderVO.setRefundOrderId(refundReturn.getOrderId());
+            orderVO.setRefundUserId(refundReturn.getUserId());
+            orderVO.setRefundType(refundReturn.getType());
+            orderVO.setRefundReason(refundReturn.getReason());
+            orderVO.setRefundAmount(refundReturn.getAmount());
+            orderVO.setRefundEvidence(refundReturn.getEvidence());
+            orderVO.setRefundAdminRemark(refundReturn.getAdminRemark());
+            orderVO.setRefundCreateTime(refundReturn.getCreateTime());
+            orderVO.setRefundUpdateTime(refundReturn.getUpdateTime());
         }
 
         if (order.getAddressId() != null) {
