@@ -18,6 +18,7 @@
             <result property="stock" column="product_stock" />
             <result property="sales" column="product_sales" />
             <result property="status" column="product_status" />
+            <result property="spec" column="product_spec" />
         </association>
     </resultMap>
 
@@ -28,7 +29,8 @@
     <select id="selectFavoriteList" parameterType="Favorite" resultMap="FavoriteResult">
         select f.id, f.user_id, f.product_id, f.create_time,
                p.name as product_name, p.brand as product_brand, p.main_image as product_main_image,
-               p.price as product_price, p.stock as product_stock, p.sales as product_sales, p.status as product_status
+               p.price as product_price, p.stock as product_stock, p.sales as product_sales, p.status as product_status,
+               p.spec as product_spec
         from favorite f
         left join product p on f.product_id = p.id
         <where>

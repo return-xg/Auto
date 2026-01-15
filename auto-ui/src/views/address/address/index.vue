@@ -8,7 +8,6 @@
           icon="el-icon-plus"
           size="mini"
           @click="handleAdd"
-          v-hasPermi="['address:address:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -19,7 +18,6 @@
           size="mini"
           :disabled="single"
           @click="handleUpdate"
-          v-hasPermi="['address:address:edit']"
         >修改</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -30,7 +28,6 @@
           size="mini"
           :disabled="multiple"
           @click="handleDelete"
-          v-hasPermi="['address:address:remove']"
         >删除</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -40,7 +37,6 @@
           icon="el-icon-download"
           size="mini"
           @click="handleExport"
-          v-hasPermi="['address:address:export']"
         >导出</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
@@ -72,14 +68,12 @@
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
-            v-hasPermi="['address:address:edit']"
           >修改</el-button>
           <el-button
             size="mini"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
-            v-hasPermi="['address:address:remove']"
           >删除</el-button>
         </template>
       </el-table-column>
@@ -130,9 +124,13 @@
 <script>
 import { listAddress, getAddress, delAddress, addAddress, updateAddress } from "@/api/address/address"
 import { regionData, CodeToText } from "element-china-area-data"
+import { mapGetters } from "vuex"
 
 export default {
   name: "Address",
+  computed: {
+    ...mapGetters(['id'])
+  },
   data() {
     return {
       regionData: regionData,
@@ -185,7 +183,11 @@ export default {
     /** 查询收货地址列表 */
     getList() {
       this.loading = true
-      listAddress(this.queryParams).then(response => {
+      const params = {
+        ...this.queryParams,
+        userId: this.id
+      }
+      listAddress(params).then(response => {
         this.addressList = response.rows.map(item => ({
           ...item,
           isDefault: item.isDefault === 1 || item.isDefault === true
@@ -257,6 +259,7 @@ export default {
         if (valid) {
           const submitData = {
             ...this.form,
+            userId: this.id,
             isDefault: this.form.isDefault ? 1 : 0
           }
           if (this.form.id != null) {
