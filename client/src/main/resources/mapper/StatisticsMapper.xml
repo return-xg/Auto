@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.auto.mapper.StatisticsMapper">
+
+    <!--
+     * 查询销售统计的基础数据
+     * 
+     * 说明：
+     * 只返回订单和订单商品的基础数据
+     * 具体的销售额、销量、利润计算在Java的StatisticsCalculationService中实现
+     * 
+     * @param dimension 时间维度
+     * @param categoryId 分类ID
+     * @param brand 品牌
+     * @return 订单和订单商品的基础数据列表
+     -->
+    <select id="selectSalesStats" resultType="java.util.HashMap">
+        SELECT 
+            o.id as orderId,
+            o.total_price,
+            op.product_id,
+            op.quantity,
+            op.total_price as order_product_total_price,
+            p.price,
+            p.category_id,
+            p.brand
+        FROM `order` o
+        LEFT JOIN order_product op ON o.id = op.order_id
+        LEFT JOIN product p ON op.product_id = p.id
+        WHERE o.status IN (1, 2, 3)
+        <if test="categoryId != null">
+            AND p.category_id = #{categoryId}
+        </if>
+        <if test="brand != null and brand != ''">
+            AND p.brand = #{brand}
+        </if>
+        <choose>
+            <when test="dimension == 'day'">
+                AND DATE(o.create_time) = CURDATE()
+            </when>
+            <when test="dimension == 'week'">
+                AND o.create_time &gt;= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+            </when>
+            <when test="dimension == 'month'">
+                AND o.create_time &gt;= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            </when>
+            <when test="dimension == 'quarter'">
+                AND o.create_time &gt;= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+            </when>
+            <when test="dimension == 'year'">
+                AND o.create_time &gt;= DATE_SUB(CURDATE(), INTERVAL 365 DAY)
+            </when>
+        </choose>
+    </select>
+
+    <!--
+     * 查询订单趋势的基础数据
+     * 
+     * 说明：
+     * 只返回按日期分组的订单基础数据
+     * 具体的订单数、金额计算在Java的StatisticsCalculationService中实现
+     * 
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 按日期分组的订单数据列表
+     -->
+    <select id="selectOrderTrend" resultType="java.util.HashMap">
+        SELECT 
+            DATE(o.create_time) as date,
+            o.id as orderId,
+            o.total_price
+        FROM `order` o
+        WHERE o.status IN (1, 2, 3)
+        <if test="startDate != null and startDate != ''">
+            AND DATE(o.create_time) &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND DATE(o.create_time) &lt;= #{endDate}
+        </if>
+        GROUP BY DATE(o.create_time), o.id, o.total_price
+        ORDER BY DATE(o.create_time)
+    </select>
+
+    <!--
+     * 查询热销商品的基础数据
+     * 
+     * 说明：
+     * 只返回商品的基础信息和订单商品关联数据
+     * 具体的销量、销售额计算在Java的StatisticsCalculationService中实现
+     * 
+     * @param sortType 排序类型（volume/sales）
+     * @param topN 返回前N条
+     * @param categoryId 分类ID
+     * @return 商品基础数据列表
+     -->
+    <select id="selectHotProducts" resultType="java.util.HashMap">
+        SELECT 
+            p.id,
+            p.name,
+            p.main_image,
+            p.category_id,
+            p.brand,
+            p.status
+        FROM product p
+        WHERE p.status = 1
+        <if test="categoryId != null">
+            AND p.category_id = #{categoryId}
+        </if>
+        ORDER BY 
+        <choose>
+            <when test="sortType == 'sales'">
+                p.id DESC
+            </when>
+            <otherwise>
+                p.id DESC
+            </otherwise>
+        </choose>
+        LIMIT #{topN}
+    </select>
+
+    <!--
+     * 查询仪表盘概览的基础数据
+     * 
+     * 说明：
+     * 只返回今日订单的基础数据
+     * 具体的销售额、订单数、访客数等计算在Java的StatisticsCalculationService中实现
+     * 
+     * @return 今日订单数据列表
+     -->
+    <select id="selectOverview" resultType="java.util.HashMap">
+        SELECT 
+            o.id as orderId,
+            o.user_id,
+            o.total_price,
+            o.status,
+            o.create_time
+        FROM `order` o
+        WHERE DATE(o.create_time) = CURDATE()
+        ORDER BY o.create_time DESC
+    </select>
+
+</mapper>
