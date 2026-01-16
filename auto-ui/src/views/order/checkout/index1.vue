@@ -226,6 +226,7 @@
 import { createOrder, payOrder } from '@/api/order/order'
 import { listAddress } from '@/api/address/address'
 import { listStore } from '@/api/store/store'
+import { addToCart, listCart } from '@/api/cart/cart'
 import AddressDialog from '@/views/address/address/AddressDialog.vue'
 
 export default {
@@ -447,54 +448,156 @@ export default {
       const userId = this.$store.getters.id
       const payType = this.selectedPaymentMethod === 'wechat' ? 1 : 2
       
-      const orderData = {
-        userId: userId,
-        cartIds: this.checkoutData.selectedItems.map(item => item.cartId),
-        deliveryType: this.deliveryType,
-        payType: payType,
-        remark: this.remark
-      }
+      // 检查是否为立即购买（cartId为null）
+      const isBuyNow = this.checkoutData.selectedItems.some(item => !item.cartId)
       
-      if (this.deliveryType === 1) {
-        orderData.addressId = this.selectedAddressId
-      } else {
-        orderData.storeId = this.storeId
-        orderData.appointmentDate = this.appointmentDate
-      }
+      let orderData
       
-      this.loading = true
-      this.paymentDialogVisible = false
-      
-      createOrder(orderData).then(response => {
-        if (response.code === 200) {
-          const orderId = response.data.id
-          this.$message.success('订单创建成功')
-          
-          const payData = {
-            orderId: orderId,
-            payType: payType,
-            success: true
+      if (isBuyNow) {
+        // 立即购买的情况，需要先添加到购物车，然后创建订单
+        const product = this.checkoutData.selectedItems[0]
+        const cartData = {
+          userId: userId,
+          productId: product.productId,
+          quantity: product.quantity,
+          spec: product.spec
+        }
+        
+        this.loading = true
+        this.paymentDialogVisible = false
+        
+        // 先添加到购物车
+        addToCart(cartData).then(response => {
+          if (response.code === 200) {
+            // 获取购物车列表，找到刚添加的商品
+            return listCart({ userId })
+          } else {
+            this.loading = false
+            this.$message.error(response.msg || '添加到购物车失败')
+            throw new Error('添加到购物车失败')
           }
-          
-          return payOrder(orderId, payData)
-        } else {
+        }).then(response => {
+          if (response.code === 200) {
+            const cartList = response.data?.cartItems || []
+            const product = this.checkoutData.selectedItems[0]
+            
+            // 找到刚添加的商品
+            const latestItem = cartList.find(item => 
+              item.productId === product.productId && 
+              item.quantity === product.quantity && 
+              item.spec === product.spec
+            )
+            
+            if (latestItem) {
+              // 构建订单数据
+              orderData = {
+                userId: userId,
+                cartIds: [latestItem.cartId],
+                deliveryType: this.deliveryType,
+                payType: payType,
+                remark: this.remark
+              }
+              
+              if (this.deliveryType === 1) {
+                orderData.addressId = this.selectedAddressId
+              } else {
+                orderData.storeId = this.storeId
+                orderData.appointmentDate = this.appointmentDate
+              }
+              
+              // 创建订单
+              return createOrder(orderData)
+            } else {
+              this.loading = false
+              this.$message.error('未找到刚添加的商品')
+              throw new Error('未找到刚添加的商品')
+            }
+          } else {
+            this.loading = false
+            this.$message.error(response.msg || '获取购物车失败')
+            throw new Error('获取购物车失败')
+          }
+        }).then(response => {
+          if (response && response.code === 200) {
+            const orderId = response.data.id
+            this.$message.success('订单创建成功')
+            
+            const payData = {
+              orderId: orderId,
+              payType: payType,
+              success: true
+            }
+            
+            return payOrder(orderId, payData)
+          } else {
+            this.loading = false
+            this.$message.error(response.msg || '订单创建失败')
+          }
+        }).then(response => {
           this.loading = false
-          this.$message.error(response.msg || '订单创建失败')
+          if (response && response.code === 200) {
+            this.$message.success('支付成功')
+            localStorage.removeItem('checkoutItems')
+            this.$router.push('/order/detail/' + response.data.id)
+          } else {
+            this.$message.error('支付失败')
+          }
+        }).catch(error => {
+          this.loading = false
+          this.$message.error('操作失败')
+          console.error('订单创建或支付失败:', error)
+        })
+      } else {
+        // 购物车结算的情况
+        orderData = {
+          userId: userId,
+          cartIds: this.checkoutData.selectedItems.map(item => item.cartId),
+          deliveryType: this.deliveryType,
+          payType: payType,
+          remark: this.remark
         }
-      }).then(response => {
-        this.loading = false
-        if (response && response.code === 200) {
-          this.$message.success('支付成功')
-          localStorage.removeItem('checkoutItems')
-          this.$router.push('/order/detail/' + response.data.id)
+        
+        if (this.deliveryType === 1) {
+          orderData.addressId = this.selectedAddressId
         } else {
-          this.$message.error('支付失败')
+          orderData.storeId = this.storeId
+          orderData.appointmentDate = this.appointmentDate
         }
-      }).catch(error => {
-        this.loading = false
-        this.$message.error('操作失败')
-        console.error('订单创建或支付失败:', error)
-      })
+        
+        this.loading = true
+        this.paymentDialogVisible = false
+        
+        createOrder(orderData).then(response => {
+          if (response.code === 200) {
+            const orderId = response.data.id
+            this.$message.success('订单创建成功')
+            
+            const payData = {
+              orderId: orderId,
+              payType: payType,
+              success: true
+            }
+            
+            return payOrder(orderId, payData)
+          } else {
+            this.loading = false
+            this.$message.error(response.msg || '订单创建失败')
+          }
+        }).then(response => {
+          this.loading = false
+          if (response && response.code === 200) {
+            this.$message.success('支付成功')
+            localStorage.removeItem('checkoutItems')
+            this.$router.push('/order/detail/' + response.data.id)
+          } else {
+            this.$message.error('支付失败')
+          }
+        }).catch(error => {
+          this.loading = false
+          this.$message.error('操作失败')
+          console.error('订单创建或支付失败:', error)
+        })
+      }
     },
     goToAddAddress() {
       this.$router.push('/user/address')

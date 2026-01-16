@@ -44,6 +44,7 @@ router.beforeEach((to, from, next) => {
             '/favorite',
             '/cart',
             '/order',
+            '/order/checkout',
             '/user/profile'
           ]
             // 如果当前路径不在允许列表中，则跳转到商品列表
@@ -78,6 +79,7 @@ router.beforeEach((to, from, next) => {
             '/favorite',
             '/cart',
             '/order',
+            '/order/checkout',
             '/user/profile'
           ]
           // 如果是common角色，只允许访问指定页面

@@ -270,7 +270,32 @@ export default {
       })
     },
     handleBuyNow() {
-      this.$message.info('立即购买功能开发中')
+      if (this.parsedSpecList.length > 0 && Object.keys(this.selectedSpecs).length === 0) {
+        this.$message.warning('请选择商品规格')
+        return
+      }
+      
+      // 构建立即购买的商品数据
+      const buyNowItem = {
+        cartId: null, // 立即购买没有购物车ID
+        productId: this.product.id,
+        productName: this.product.name,
+        productImage: this.product.mainImage,
+        price: this.product.price,
+        quantity: this.quantity,
+        subtotal: this.product.price * this.quantity,
+        spec: this.getSelectedSpecText()
+      }
+      
+      // 存储到localStorage，与购物车结算使用相同的数据结构
+      localStorage.setItem('checkoutItems', JSON.stringify({
+        selectedItems: [buyNowItem],
+        totalAmount: buyNowItem.subtotal,
+        selectedCount: buyNowItem.quantity
+      }))
+      
+      // 跳转到结账页面
+      this.$router.push('/order/checkout')
     },
     handleClose() {
       this.dialogVisible = false
