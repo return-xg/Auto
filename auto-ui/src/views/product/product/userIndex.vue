@@ -20,6 +20,60 @@
       </div>
     </el-card>
     
+    <!-- 销量前三轮播图 -->
+    <el-card v-if="topProducts.length > 0" class="carousel-card" shadow="hover" style="margin-top: 20px;">
+      <div slot="header" class="card-header">
+        <span>本周销量前三</span>
+      </div>
+      <el-carousel
+        v-loading="carouselLoading"
+        :interval="carouselInterval"
+        arrow="always"
+        height="300px"
+        indicator-position="outside"
+      >
+        <el-carousel-item v-for="(product, index) in topProducts" :key="product.id">
+          <div class="carousel-item" @click="viewProductDetail(product)">
+            <el-row :gutter="20" style="height: 100%;">
+              <el-col :span="12" style="display: flex; align-items: center; justify-content: center;">
+                <el-image
+                  :src="getProductCoverImage(product)"
+                  fit="contain"
+                  style="max-width: 100%; max-height: 240px;"
+                >
+                  <div slot="error" class="image-error">
+                    <i class="el-icon-picture-outline"></i>
+                  </div>
+                </el-image>
+              </el-col>
+              <el-col :span="12" style="display: flex; flex-direction: column; justify-content: center;">
+                <div class="carousel-rank" :class="'rank-' + (index + 1)">{{ index + 1 }}</div>
+                <div class="carousel-product-name">{{ product.name }}</div>
+                <div class="carousel-product-brand">品牌: {{ product.brand }}</div>
+                <div class="carousel-product-price">
+                  <span class="price-symbol">¥</span>
+                  <span class="price-value">{{ Number(product.price).toFixed(2) }}</span>
+                </div>
+                <div class="carousel-product-sales">
+                  <i class="el-icon-sell"></i>
+                  <span>销量: {{ product.sales }}</span>
+                </div>
+                <el-button
+                  :type="product.isFavorite ? 'warning' : 'default'"
+                  size="small"
+                  @click.stop="toggleFavorite(product)"
+                  style="margin-top: 15px; align-self: flex-start;"
+                >
+                  <i :class="product.isFavorite ? 'el-icon-star-on' : 'el-icon-star-off'"></i>
+                  {{ product.isFavorite ? '已收藏' : '收藏' }}
+                </el-button>
+              </el-col>
+            </el-row>
+          </div>
+        </el-carousel-item>
+      </el-carousel>
+    </el-card>
+    
     <el-row :gutter="20" style="margin-top: 20px;">
       <el-col :span="4">
         <el-card class="category-card">
@@ -222,7 +276,11 @@ export default {
       },
       detailDialogVisible: false,
       currentProduct: {},
-      favoriteProducts: new Set()
+      favoriteProducts: new Set(),
+      // 轮播图相关数据
+      carouselLoading: false,
+      topProducts: [],
+      carouselInterval: 5000
     }
   },
   computed: {
@@ -258,8 +316,75 @@ export default {
     this.loadFavorites()
     this.loadProductList()
     this.loadFilterOptions()
+    this.loadTopProducts()
   },
   methods: {
+    // 计算时间范围
+    getDateRange(weeksAgo = 0) {
+      const now = new Date()
+      const dayOfWeek = now.getDay() || 7 // 将周日(0)转换为7
+      
+      // 计算本周一的日期
+      const monday = new Date(now)
+      monday.setDate(now.getDate() - dayOfWeek + 1 - (weeksAgo * 7))
+      
+      // 计算本周日的日期
+      const sunday = new Date(monday)
+      sunday.setDate(monday.getDate() + 6)
+      
+      // 格式化日期为YYYY-MM-DD格式
+      const formatDate = (date) => {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }
+      
+      return {
+        startDate: formatDate(monday),
+        endDate: formatDate(sunday)
+      }
+    },
+    
+    // 获取销量前三的商品
+    loadTopProducts(weeksAgo = 0) {
+      this.carouselLoading = true
+      
+      const { startDate, endDate } = this.getDateRange(weeksAgo)
+      
+      // 调用商品列表API，按销量降序排序，只取前3个
+      const queryParams = {
+        pageNum: 1,
+        pageSize: 3,
+        status: 1,
+        orderBy: 'sales_desc',
+        startTime: startDate,
+        endTime: endDate
+      }
+      
+      listProduct(queryParams).then(response => {
+        this.carouselLoading = false
+        if (response.code === 200) {
+          const products = response.rows || []
+          if (products.length > 0) {
+            // 如果有数据，直接使用
+            this.topProducts = products.map(product => ({
+              ...product,
+              isFavorite: this.favoriteProducts.has(product.id)
+            }))
+          } else if (weeksAgo < 4) {
+            // 如果没有数据且查找周数小于4，递归查找上一周
+            this.loadTopProducts(weeksAgo + 1)
+          } else {
+            // 如果查找了4周都没有数据，显示空
+            this.topProducts = []
+          }
+        }
+      }).catch(error => {
+        this.carouselLoading = false
+        console.error('获取销量前三商品失败:', error)
+      })
+    },
     loadCategories() {
       listCategory({ pageNum: 1, pageSize: 100 }).then(response => {
         if (response.code === 200) {
@@ -624,6 +749,97 @@ export default {
   color: #409EFF;
   background-color: #ecf5ff;
   border-color: #b3d8ff;
+}
+
+.carousel-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+.carousel-item {
+  cursor: pointer;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.carousel-rank {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-rank.rank-1 {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.carousel-rank.rank-2 {
+  background: linear-gradient(135deg, #c0c0c0, #e0e0e0);
+  box-shadow: 0 4px 12px rgba(192, 192, 192, 0.3);
+}
+
+.carousel-rank.rank-3 {
+  background: linear-gradient(135deg, #cd7f32, #f0c040);
+  box-shadow: 0 4px 12px rgba(205, 127, 50, 0.3);
+}
+
+.carousel-product-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.carousel-product-brand {
+  font-size: 14px;
+  color: #909399;
+  margin-bottom: 15px;
+}
+
+.carousel-product-price {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 15px;
+}
+
+.carousel-product-price .price-symbol {
+  font-size: 16px;
+  color: #f56c6c;
+  margin-right: 2px;
+}
+
+.carousel-product-price .price-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #f56c6c;
+}
+
+.carousel-product-sales {
+  font-size: 14px;
+  color: #606266;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.carousel-product-sales i {
+  margin-right: 5px;
+  color: #409eff;
 }
 
 .pagination-container {
