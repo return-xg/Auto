@@ -22,20 +22,6 @@
             </el-button>
           </el-button-group>
         </div>
-        <div class="nav-right">
-          <el-dropdown @command="handleUserCommand">
-            <span class="user-dropdown">
-              <i class="el-icon-user"></i>
-              <span>用户中心</span>
-              <i class="el-icon-arrow-down"></i>
-            </span>
-            <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item command="profile">个人资料</el-dropdown-item>
-              <el-dropdown-item command="settings">设置</el-dropdown-item>
-              <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
-            </el-dropdown-menu>
-          </el-dropdown>
-        </div>
       </div>
     </div>
 

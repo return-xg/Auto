@@ -38,13 +38,14 @@ router.beforeEach((to, from, next) => {
             // 隐藏侧边栏
             store.dispatch('app/toggleSideBarHide', true)
             // 允许common角色访问的页面列表
-            const allowedPaths = [
-              '/product/userIndex',
-              '/address',
-              '/favorite',
-              '/cart',
-              '/order'
-            ]
+          const allowedPaths = [
+            '/product/userIndex',
+            '/address',
+            '/favorite',
+            '/cart',
+            '/order',
+            '/user/profile'
+          ]
             // 如果当前路径不在允许列表中，则跳转到商品列表
             if (!allowedPaths.includes(to.path)) {
               next({ path: '/product/userIndex', replace: true })
@@ -76,7 +77,8 @@ router.beforeEach((to, from, next) => {
             '/address',
             '/favorite',
             '/cart',
-            '/order'
+            '/order',
+            '/user/profile'
           ]
           // 如果是common角色，只允许访问指定页面
           if (!allowedPaths.includes(to.path)) {
