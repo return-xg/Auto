@@ -4,12 +4,6 @@
       <h2>数据统计与分析</h2>
       <div class="refresh-controls">
         <el-button type="primary" icon="el-icon-refresh" :loading="loading" @click="refreshData">刷新数据</el-button>
-        <el-select v-model="refreshInterval" placeholder="自动刷新" style="width: 120px; margin-left: 10px" @change="handleRefreshIntervalChange">
-          <el-option label="关闭" :value="0" />
-          <el-option label="30秒" :value="30" />
-          <el-option label="1分钟" :value="60" />
-          <el-option label="5分钟" :value="300" />
-        </el-select>
       </div>
     </div>
 
@@ -212,8 +206,6 @@ export default {
   data() {
     return {
       loading: false,
-      refreshInterval: 0,
-      refreshTimer: null,
       
       salesTimeDimension: 'month',
       salesLoading: false,
@@ -246,7 +238,6 @@ export default {
     window.addEventListener('resize', this.handleResize)
   },
   beforeDestroy() {
-    this.clearRefreshTimer()
     if (this.salesChart) {
       this.salesChart.dispose()
     }
@@ -270,22 +261,6 @@ export default {
       ]).finally(() => {
         this.loading = false
       })
-    },
-    
-    handleRefreshIntervalChange(value) {
-      this.clearRefreshTimer()
-      if (value > 0) {
-        this.refreshTimer = setInterval(() => {
-          this.refreshData()
-        }, value * 1000)
-      }
-    },
-    
-    clearRefreshTimer() {
-      if (this.refreshTimer) {
-        clearInterval(this.refreshTimer)
-        this.refreshTimer = null
-      }
     },
     
     handleResize() {
