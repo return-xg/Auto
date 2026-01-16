@@ -30,7 +30,7 @@ const permission = {
   },
   actions: {
     // 生成路由
-    GenerateRoutes({ commit }) {
+    GenerateRoutes({ commit, rootState }) {
       return new Promise(resolve => {
         // 向后端请求路由数据
         getRouters().then(res => {
@@ -42,9 +42,19 @@ const permission = {
           rewriteRoutes.push({ path: '*', redirect: '/404', hidden: true })
           router.addRoutes(asyncRoutes)
           commit('SET_ROUTES', rewriteRoutes)
-          commit('SET_SIDEBAR_ROUTERS', constantRoutes.concat(sidebarRoutes))
-          commit('SET_DEFAULT_ROUTES', sidebarRoutes)
-          commit('SET_TOPBAR_ROUTES', sidebarRoutes)
+          
+          // 判断用户角色，如果是common角色则只使用公共路由作为侧边栏路由
+          const userRoles = rootState.user.roles || []
+          if (userRoles.includes('common')) {
+            commit('SET_SIDEBAR_ROUTERS', constantRoutes)
+            commit('SET_DEFAULT_ROUTES', [])
+            commit('SET_TOPBAR_ROUTES', [])
+          } else {
+            commit('SET_SIDEBAR_ROUTERS', constantRoutes.concat(sidebarRoutes))
+            commit('SET_DEFAULT_ROUTES', sidebarRoutes)
+            commit('SET_TOPBAR_ROUTES', sidebarRoutes)
+          }
+          
           resolve(rewriteRoutes)
         })
       })

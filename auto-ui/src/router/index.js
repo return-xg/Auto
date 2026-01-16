@@ -70,7 +70,7 @@ export const constantRoutes = [
         path: 'index',
         component: () => import('@/views/index'),
         name: 'Index',
-        meta: { title: '首页', icon: 'dashboard', affix: true }
+        meta: { title: '首页', icon: 'dashboard', affix: true, roles: ['admin', 'other_role'] }
       }
     ]
   },
@@ -89,6 +89,48 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/address',
+    component: Layout,
+    hidden: true,
+    redirect: 'noredirect',
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/address/address/index.vue'),
+        name: 'AddressList',
+        meta: { title: '我的地址', icon: 'location' }
+      }
+    ]
+  },
+  {
+    path: '/cart',
+    component: Layout,
+    hidden: true,
+    redirect: 'noredirect',
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/cart/cart/index.vue'),
+        name: 'CartList',
+        meta: { title: '购物车', icon: 'shopping-cart-2' }
+      }
+    ]
+  },
+  {
+    path: '/favorite',
+    component: Layout,
+    hidden: true,
+    redirect: 'noredirect',
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/favorite/favorite/index.vue'),
+        name: 'FavoriteList',
+        meta: { title: '我的收藏', icon: 'star-off' }
+      }
+    ]
+  },
+  {
     path: '/order',
     component: Layout,
     hidden: true,
@@ -101,10 +143,24 @@ export const constantRoutes = [
         meta: { title: '订单结算', icon: 'shopping-cart' }
       },
       {
-        path: 'order',
+        path: '',
         component: () => import('@/views/order/order/index.vue'),
         name: 'OrderList',
         meta: { title: '我的订单', icon: 'shopping' }
+      }
+    ]
+  },
+  {
+    path: '/product',
+    component: Layout,
+    hidden: true,
+    redirect: 'noredirect',
+    children: [
+      {
+        path: 'userIndex',
+        component: () => import('@/views/product/product/userIndex'),
+        name: 'ProductUserIndex',
+        meta: { title: '商品', icon: 'goods', affix: true }
       }
     ]
   }

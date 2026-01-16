@@ -31,6 +31,30 @@ router.beforeEach((to, from, next) => {
         // 判断当前用户是否已拉取完user_info信息
         store.dispatch('GetInfo').then(() => {
           isRelogin.show = false
+          
+          // 根据用户角色判断是否隐藏侧边栏
+          const userRoles = store.getters.roles || []
+          if (userRoles.includes('common')) {
+            // 隐藏侧边栏
+            store.dispatch('app/toggleSideBarHide', true)
+            // 允许common角色访问的页面列表
+            const allowedPaths = [
+              '/product/userIndex',
+              '/address',
+              '/favorite',
+              '/cart',
+              '/order'
+            ]
+            // 如果当前路径不在允许列表中，则跳转到商品列表
+            if (!allowedPaths.includes(to.path)) {
+              next({ path: '/product/userIndex', replace: true })
+              return
+            }
+          } else {
+            // 显示侧边栏
+            store.dispatch('app/toggleSideBarHide', false)
+          }
+          
           store.dispatch('GenerateRoutes').then(accessRoutes => {
             // 根据roles权限生成可访问的路由表
             router.addRoutes(accessRoutes) // 动态添加可访问路由表
@@ -43,6 +67,23 @@ router.beforeEach((to, from, next) => {
             })
           })
       } else {
+        // 已经获取了用户角色信息，再次判断角色
+        const userRoles = store.getters.roles || []
+        if (userRoles.includes('common')) {
+          // 允许common角色访问的页面列表
+          const allowedPaths = [
+            '/product/userIndex',
+            '/address',
+            '/favorite',
+            '/cart',
+            '/order'
+          ]
+          // 如果是common角色，只允许访问指定页面
+          if (!allowedPaths.includes(to.path)) {
+            next({ path: '/product/userIndex', replace: true })
+            return
+          }
+        }
         next()
       }
     }

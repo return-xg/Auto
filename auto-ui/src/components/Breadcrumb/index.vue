@@ -45,8 +45,10 @@ export default {
       } else {
         matched = router.matched.filter(item => item.meta && item.meta.title)
       }
-      // 判断是否为首页
-      if (!this.isDashboard(matched[0])) {
+      // 获取用户角色信息
+      const userRoles = this.$store.getters.roles || []
+      // 只有非common角色且不是首页时才显示首页
+      if (!userRoles.includes('common') && !this.isDashboard(matched[0])) {
         matched = [{ path: "/index", meta: { title: "首页" } }].concat(matched)
       }
       this.levelList = matched.filter(item => item.meta && item.meta.title && item.meta.breadcrumb !== false)

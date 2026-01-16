@@ -1,8 +1,13 @@
 <template>
-  <div :class="classObj" class="app-wrapper" :style="{'--current-color': theme}">
+  <div :class="classObj" class="app-wrapper" :style="{'--current-color': theme, 'background-color': 'white'}">
     <div v-if="device==='mobile'&&sidebar.opened" class="drawer-bg" @click="handleClickOutside"/>
-    <sidebar v-if="!sidebar.hide" class="sidebar-container"/>
-    <div :class="{hasTagsView:needTagsView,sidebarHide:sidebar.hide}" class="main-container">
+    <!-- 只有当sidebar.hide为false且用户不是common角色时，才显示侧边栏 -->
+    <sidebar 
+      v-if="!sidebar.hide && !isCommonUser" 
+      class="sidebar-container"
+    />
+    <!-- 当sidebar.hide为true或用户是common角色时，main-container的margin-left为0 -->
+    <div :class="{hasTagsView:needTagsView,sidebarHide:sidebar.hide || isCommonUser}" class="main-container">
       <div :class="{'fixed-header':fixedHeader}">
         <navbar @setLayout="setLayout"/>
         <tags-view v-if="needTagsView"/>
@@ -40,14 +45,19 @@ export default {
     }),
     classObj() {
       return {
-        hideSidebar: !this.sidebar.opened,
-        openSidebar: this.sidebar.opened,
+        hideSidebar: false,
+        openSidebar: false,
         withoutAnimation: this.sidebar.withoutAnimation,
         mobile: this.device === 'mobile'
       }
     },
     variables() {
       return variables
+    },
+    // 判断当前用户是否是common角色
+    isCommonUser() {
+      const userRoles = this.$store.getters.roles || []
+      return userRoles.includes('common')
     }
   },
   methods: {
@@ -111,5 +121,13 @@ export default {
 
   .mobile .fixed-header {
     width: 100%;
+  }
+  /* 为common角色用户隐藏侧边栏的兜底样式 */
+  .sidebar-container.common-role-hidden {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
   }
 </style>

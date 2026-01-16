@@ -1,6 +1,26 @@
 <template>
   <div class="user-product-container">
-    <el-row :gutter="20">
+    <!-- 导航栏 -->
+    <el-card class="nav-card" shadow="hover">
+      <div class="nav-bar">
+        <el-button-group>
+          <el-button type="text" icon="el-icon-location" @click="navigateTo('/address')">
+            我的地址
+          </el-button>
+          <el-button type="text" icon="el-icon-star-off" @click="navigateTo('/favorite')">
+            我的收藏
+          </el-button>
+          <el-button type="text" icon="el-icon-shopping-cart-2" @click="navigateTo('/cart')">
+            我的购物车
+          </el-button>
+          <el-button type="text" icon="el-icon-document" @click="navigateTo('/order')">
+            我的订单
+          </el-button>
+        </el-button-group>
+      </div>
+    </el-card>
+    
+    <el-row :gutter="20" style="margin-top: 20px;">
       <el-col :span="4">
         <el-card class="category-card">
           <div slot="header" class="card-header">
@@ -415,6 +435,16 @@ export default {
       }).catch(error => {
         this.$message.error('添加失败')
       })
+    },
+    navigateTo(path) {
+      console.log('导航点击事件触发，目标路径:', path)
+      console.log('当前路由:', this.$route.path)
+      try {
+        this.$router.push(path)
+        console.log('路由跳转执行成功')
+      } catch (error) {
+        console.error('路由跳转失败:', error)
+      }
     }
   }
 }
@@ -564,6 +594,36 @@ export default {
   p {
     font-size: 16px;
   }
+}
+
+.nav-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+.nav-bar {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.el-button-group {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  max-width: 800px;
+}
+
+.el-button-group .el-button {
+  font-size: 14px;
+  padding: 8px 20px;
+  transition: all 0.3s;
+}
+
+.el-button-group .el-button:hover {
+  color: #409EFF;
+  background-color: #ecf5ff;
+  border-color: #b3d8ff;
 }
 
 .pagination-container {

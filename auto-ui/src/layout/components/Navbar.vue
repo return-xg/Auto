@@ -1,6 +1,7 @@
 <template>
   <div class="navbar" :class="'nav' + navType">
-    <hamburger id="hamburger-container" :is-active="sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
+    <!-- 只有当侧边栏不隐藏时才显示汉堡菜单 -->
+    <hamburger v-if="!sidebar.hide" id="hamburger-container" :is-active="sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
 
     <breadcrumb v-if="navType == 1" id="breadcrumb-container" class="breadcrumb-container" />
     <top-nav v-if="navType == 2" id="topmenu-container" class="topmenu-container" />
