@@ -260,7 +260,9 @@ public class StatisticsServiceImpl implements IStatisticsService {
         switch (dimension) {
             case "day":
                 // 小时标签：0:00, 1:00, ...
-                int hour = (now.getHours() - (total - 1 - index) + 24) % 24;
+                cal = java.util.Calendar.getInstance();
+                cal.setTime(now);
+                int hour = (cal.get(java.util.Calendar.HOUR_OF_DAY) - (total - 1 - index) + 24) % 24;
                 return hour + ":00";
                 
             case "week":

@@ -628,10 +628,10 @@ public class StatisticsCalculationService {
         today.set(Calendar.SECOND, 0);
         
         Order queryOrder = new Order();
-        queryOrder.setParams(Map.of(
-            "beginTime", today.getTime(),
-            "endTime", new Date()
-        ));
+        Map<String, Object> params = new HashMap<>();
+        params.put("beginTime", today.getTime());
+        params.put("endTime", new Date());
+        queryOrder.setParams(params);
         
         List<Order> allOrders = orderMapper.selectOrderList(queryOrder);
         
