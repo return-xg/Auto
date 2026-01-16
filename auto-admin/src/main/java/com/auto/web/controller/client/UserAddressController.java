@@ -40,6 +40,7 @@ public class UserAddressController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(UserAddress userAddress)
     {
+        userAddress.setUserId(getUserId());
         startPage();
         List<UserAddress> list = userAddressService.selectUserAddressList(userAddress);
         return getDataTable(list);
@@ -63,7 +64,14 @@ public class UserAddressController extends BaseController
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
-        return success(userAddressService.selectUserAddressById(id));
+        UserAddress address = userAddressService.selectUserAddressById(id);
+        if (address == null) {
+            return AjaxResult.error("地址不存在");
+        }
+        if (!address.getUserId().equals(getUserId())) {
+            return AjaxResult.error("无权查看其他用户的地址");
+        }
+        return success(address);
     }
 
     /**
@@ -73,6 +81,7 @@ public class UserAddressController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody UserAddress userAddress)
     {
+        userAddress.setUserId(getUserId());
         return toAjax(userAddressService.insertUserAddress(userAddress));
     }
 
@@ -83,6 +92,14 @@ public class UserAddressController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody UserAddress userAddress)
     {
+        UserAddress existAddress = userAddressService.selectUserAddressById(userAddress.getId());
+        if (existAddress == null) {
+            return AjaxResult.error("地址不存在");
+        }
+        if (!existAddress.getUserId().equals(getUserId())) {
+            return AjaxResult.error("无权修改其他用户的地址");
+        }
+        userAddress.setUserId(getUserId());
         return toAjax(userAddressService.updateUserAddress(userAddress));
     }
 
@@ -93,6 +110,15 @@ public class UserAddressController extends BaseController
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)
     {
+        for (Long id : ids) {
+            UserAddress existAddress = userAddressService.selectUserAddressById(id);
+            if (existAddress == null) {
+                return AjaxResult.error("地址不存在");
+            }
+            if (!existAddress.getUserId().equals(getUserId())) {
+                return AjaxResult.error("无权删除其他用户的地址");
+            }
+        }
         return toAjax(userAddressService.deleteUserAddressByIds(ids));
     }
 }
