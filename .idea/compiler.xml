@@ -6,14 +6,16 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="auto-generator" />
         <module name="auto-admin" />
         <module name="client" />
         <module name="auto-framework" />
         <module name="auto-common" />
-        <module name="auto-quartz" />
         <module name="auto-system" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="auto-generator" target="1.8" />
+      <module name="auto-quartz" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>
