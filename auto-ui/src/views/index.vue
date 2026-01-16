@@ -26,12 +26,6 @@
                 <el-radio-button label="quarter">季度</el-radio-button>
                 <el-radio-button label="year">年</el-radio-button>
               </el-radio-group>
-              <el-select v-model="salesCategory" placeholder="商品分类" clearable size="small" style="width: 150px; margin-left: 10px" @change="handleSalesCategoryChange">
-                <el-option v-for="item in categoryOptions" :key="item.value" :label="item.label" :value="item.value" />
-              </el-select>
-              <el-select v-model="salesBrand" placeholder="品牌" clearable size="small" style="width: 150px; margin-left: 10px" @change="handleSalesBrandChange">
-                <el-option v-for="item in brandOptions" :key="item.value" :label="item.label" :value="item.value" />
-              </el-select>
             </div>
           </div>
           <div v-loading="salesLoading" class="sales-stats">
@@ -222,8 +216,6 @@ export default {
       refreshTimer: null,
       
       salesTimeDimension: 'month',
-      salesCategory: '',
-      salesBrand: '',
       salesLoading: false,
       salesData: {
         totalSales: 0,
@@ -245,22 +237,10 @@ export default {
       hotProductSortType: 'volume',
       hotProductTopN: 10,
       hotProductLoading: false,
-      hotProducts: [],
-      
-      categoryOptions: [],
-      
-      brandOptions: [
-        { label: '博世', value: 'bosch' },
-        { label: '布雷博', value: 'brembo' },
-        { label: '采埃孚', value: 'zf' },
-        { label: '大陆', value: 'continental' },
-        { label: '德尔福', value: 'delphi' },
-        { label: '电装', value: 'denso' }
-      ]
+      hotProducts: []
     }
   },
   mounted() {
-    this.fetchCategoryOptions()
     this.initData()
     this.initCharts()
     window.addEventListener('resize', this.handleResize)
@@ -279,19 +259,6 @@ export default {
     initData() {
       this.refreshData()
       this.setOrderQuickRange('30days')
-    },
-    
-    fetchCategoryOptions() {
-      listCategory({}).then(response => {
-        if (response.code === 200 && response.rows) {
-          this.categoryOptions = response.rows.map(item => ({
-            label: item.name,
-            value: item.id
-          }))
-        }
-      }).catch(error => {
-        console.error('获取分类列表失败:', error)
-      })
     },
     
     refreshData() {
@@ -369,20 +336,10 @@ export default {
       this.fetchSalesData()
     },
     
-    handleSalesCategoryChange() {
-      this.fetchSalesData()
-    },
-    
-    handleSalesBrandChange() {
-      this.fetchSalesData()
-    },
-    
     fetchSalesData() {
       this.salesLoading = true
       const params = {
-        dimension: this.salesTimeDimension,
-        category: this.salesCategory,
-        brand: this.salesBrand
+        dimension: this.salesTimeDimension
       }
       return getSalesStats(params)
         .then(response => {
