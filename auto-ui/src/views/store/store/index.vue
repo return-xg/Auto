@@ -81,16 +81,19 @@
       v-loading="loading"
       :data="storeList"
       @selection-change="handleSelectionChange"
+      fit
+      border
+      style="width: 100%"
     >
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="门店编号" align="center" prop="id" width="80" />
-      <el-table-column label="门店名称" align="center" prop="name" width="120" show-overflow-tooltip />
-      <el-table-column label="地区" align="center" prop="region" width="200" show-overflow-tooltip>
+      <el-table-column label="门店名称" align="center" prop="name" min-width="120" show-overflow-tooltip />
+      <el-table-column label="地区" align="center" prop="region" min-width="180" show-overflow-tooltip>
         <template slot-scope="scope">
           {{ scope.row.province }} {{ scope.row.city }} {{ scope.row.district }}
         </template>
       </el-table-column>
-      <el-table-column label="详细地址" align="center" prop="address" width="240" show-overflow-tooltip />
+      <el-table-column label="详细地址" align="center" prop="address" min-width="250" show-overflow-tooltip />
       <el-table-column label="联系电话" align="center" prop="phone" width="110" />
       <el-table-column label="营业时间" align="center" prop="businessHours" width="110" show-overflow-tooltip />
       <el-table-column label="状态" align="center" prop="status" width="70">
@@ -485,6 +488,15 @@ export default {
 </script>
 
 <style scoped>
+.app-container {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.el-table {
+  width: 100% !important;
+}
+
 .pagination-container {
   padding: 32px 16px;
   text-align: right;
